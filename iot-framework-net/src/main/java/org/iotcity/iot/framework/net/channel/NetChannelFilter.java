@@ -8,10 +8,10 @@ package org.iotcity.iot.framework.net.channel;
 public interface NetChannelFilter {
 
 	/**
-	 * Filter and output qualified channel objects.
+	 * Test and output qualified channel objects.
 	 * @param channel The channel object to meet conditions.
 	 * @return Returns true when the filter conditions are met, otherwise, returns false.
 	 */
-	boolean filter(NetChannel channel);
+	boolean test(NetChannel channel);
 
 }

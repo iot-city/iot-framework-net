@@ -28,11 +28,6 @@ public interface NetService {
 	NetServiceOptions getOptions();
 
 	/**
-	 * Determine whether to use multithreading to process message data.
-	 */
-	boolean isMultithreading();
-
-	/**
 	 * Gets the current state of this service.
 	 */
 	NetServiceState getState();

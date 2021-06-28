@@ -39,7 +39,7 @@ public class NetResponser {
 
 	/**
 	 * Fix the timeout value by using the timeout value of global configure.
-	 * @param timeout The timeout value in milliseconds that waiting for a response data callback (optional, the global configuration timeout is used when the parameter value is less than or equal to 0.).
+	 * @param timeout The timeout value in milliseconds that waiting for a response data callback (optional, the global configuration timeout is used when the parameter value is less than or equal to 0).
 	 * @return The timeout value in milliseconds that has been fixed.
 	 */
 	public long fixTimeout(long timeout) {
@@ -125,11 +125,52 @@ public class NetResponser {
 			contexts = map.values().toArray(new NetResponserContext[map.size()]);
 		}
 		// Get the timeout status.
-		NetMessageStatus status = NetMessageStatus.TIMEOUT;
+		NetMessageStatus status = NetMessageStatus.RESPONSE_TIMEOUT;
 		// Traverse the contexts to get timeout objects.
 		for (NetResponserContext context : contexts) {
 			// Get timeout responser objects.
 			NetResponserObject[] objects = context.removeTimeout(time);
+			if (objects == null) continue;
+			// Traverse the objects to execute callback.
+			for (NetResponserObject object : objects) {
+				// Get the callback object.
+				NetResponseCallback<?> callback = object.callback;
+				try {
+					// Execute callback.
+					callback.callbackResponse(status, null);
+				} catch (Exception e) {
+					// Log error message.
+					FrameworkNet.getLogger().error(FrameworkNet.getLocale().text("net.message.logic.res.err", object.responseClass.getName(), e.getMessage()), e);
+					// Get event factory and publisher.
+					NetEventFactory factory = object.io.getService().getEventFactory();
+					BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
+					// Create an error event.
+					NetMessageErrorEvent event = factory.createMessageErrorEvent(this, NetMessageDirection.TO_REMOTE_REQUEST, object.io, object.request, null, new Exception[] {
+						e
+					}, NetMessageStatus.CALLBACK_EXCEPTION);
+					// Publish the error event.
+					publisher.publish(event);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Execute all responser data callback before the channel closing.
+	 */
+	public void callbackOnClosing() {
+		// Get responser data contexts.
+		NetResponserContext[] contexts;
+		synchronized (lock) {
+			contexts = map.values().toArray(new NetResponserContext[map.size()]);
+			map.clear();
+		}
+		// Get the closed status.
+		NetMessageStatus status = NetMessageStatus.CHANNEL_CLOSING;
+		// Traverse the contexts to get timeout objects.
+		for (NetResponserContext context : contexts) {
+			// Get timeout responser objects.
+			NetResponserObject[] objects = context.removeAll();
 			if (objects == null) continue;
 			// Traverse the objects to execute callback.
 			for (NetResponserObject object : objects) {
@@ -259,6 +300,16 @@ public class NetResponser {
 			}
 			// Return removing objects.
 			return objects;
+		}
+
+		/**
+		 * Remove all responser data objects.
+		 * @return The network asynchronous responser objects.
+		 */
+		synchronized NetResponserObject[] removeAll() {
+			NetResponserObject[] ret = array;
+			array = new NetResponserObject[0];
+			return ret;
 		}
 
 		/**

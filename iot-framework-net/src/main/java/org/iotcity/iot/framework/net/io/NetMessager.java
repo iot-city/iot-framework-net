@@ -26,8 +26,6 @@ public final class NetMessager {
 	public NetMessageStatus onMessage(NetIO<?, ?> io) throws IllegalArgumentException {
 		if (io == null) throw new IllegalArgumentException("Parameter io can not be null!");
 
-		// Update message time.
-		io.getChannel().updateMessageTime();
 		// Get inbounds.
 		NetInboundObject[] inbounds = io.getInbounds();
 		// Check inbounds.
@@ -60,6 +58,8 @@ public final class NetMessager {
 				}
 				// Check for null value.
 				if (data == null) continue;
+				// Update message time.
+				io.getChannel().updateMessageTime();
 
 				// Determine the network data.
 				if (data.isRequest()) {
@@ -165,9 +165,9 @@ public final class NetMessager {
 					// Log error message.
 					FrameworkNet.getLogger().warn(FrameworkNet.getLocale().text("net.message.sync.res.err", request.getClass().getName()));
 					// Publish an error event.
-					publishErrorEvent(NetMessageDirection.TO_REMOTE_RESPONSE, io, request, response, null, NetMessageStatus.RESPONSE_ERROR);
+					publishErrorEvent(NetMessageDirection.TO_REMOTE_RESPONSE, io, request, response, null, NetMessageStatus.WRONG_RESPONSE_MODE);
 					// Return response error status.
-					return NetMessageStatus.RESPONSE_ERROR;
+					return NetMessageStatus.WRONG_RESPONSE_MODE;
 				}
 
 			}
@@ -194,7 +194,7 @@ public final class NetMessager {
 	 */
 	private NetMessageStatus sendResponse(NetIO<?, ?> io, NetData request, NetDataResponse response) {
 		// Check for response null value.
-		if (response == null) return NetMessageStatus.NO_RESPONSE;
+		if (response == null) return NetMessageStatus.OK;
 		// Get response data class.
 		Class<?> responseClass = response.getClass();
 
@@ -215,7 +215,11 @@ public final class NetMessager {
 					// Filter I/O and network data.
 					if (!outbound.filterIO(io, response)) continue;
 					// Send response to remote end.
-					return outbound.sendIO(io, response);
+					NetMessageStatus status = outbound.sendIO(io, response);
+					// Update sent time.
+					io.getChannel().updateSentTime();
+					// Return sent status.
+					return status;
 
 				} catch (Exception e) {
 

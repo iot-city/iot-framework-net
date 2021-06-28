@@ -37,10 +37,6 @@ public abstract class NetServiceHandler implements NetService {
 	 */
 	protected final NetServiceOptions options;
 	/**
-	 * Whether to use multithreading to process message data.
-	 */
-	protected final boolean multithreading;
-	/**
 	 * The lock object for network state updating.
 	 */
 	protected final Object stateLock = new Object();
@@ -49,7 +45,7 @@ public abstract class NetServiceHandler implements NetService {
 	 */
 	protected NetServiceState state = NetServiceState.CREATED;
 	/**
-	 * The network channels map (the key is channel ID, the value is channel object).
+	 * The network channels thread safe map (the key is channel ID, the value is channel object).
 	 */
 	protected final Map<String, NetChannel> channels = new ConcurrentHashMap<>();
 
@@ -88,20 +84,18 @@ public abstract class NetServiceHandler implements NetService {
 
 	/**
 	 * Constructor for network service handler.
-	 * @param manager The net manager object (required, not null).
-	 * @param serviceID The service unique identification (required, not null or empty).
-	 * @param multithreading Whether to use multithreading to process message data.
+	 * @param manager The net manager object (required, can not be null).
+	 * @param serviceID The service unique identification (required, can not be or empty).
 	 * @param options The network service global configuration option data (optional).
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "manager" or "serviceID" is null or empty.
 	 */
-	public NetServiceHandler(NetManager manager, String serviceID, boolean multithreading, NetServiceOptions options) throws IllegalArgumentException {
+	public NetServiceHandler(NetManager manager, String serviceID, NetServiceOptions options) throws IllegalArgumentException {
 		if (manager == null || StringHelper.isEmpty(serviceID)) {
 			throw new IllegalArgumentException("Parameter service or channelID can not be null or empty!");
 		}
 		this.manager = manager;
 		this.serviceID = serviceID;
 		this.options = options == null ? new NetServiceOptions() : options;
-		this.multithreading = multithreading;
 		this.createTime = System.currentTimeMillis();
 		// Publish created event.
 		NetEventFactory factory = this.getEventFactory();
@@ -124,11 +118,6 @@ public abstract class NetServiceHandler implements NetService {
 	@Override
 	public NetServiceOptions getOptions() {
 		return options;
-	}
-
-	@Override
-	public boolean isMultithreading() {
-		return multithreading;
 	}
 
 	@Override
@@ -172,7 +161,7 @@ public abstract class NetServiceHandler implements NetService {
 	public NetChannel[] filterChannels(NetChannelFilter filter) {
 		List<NetChannel> list = new ArrayList<>();
 		for (NetChannel channel : channels.values()) {
-			if (filter.filter(channel)) list.add(channel);
+			if (filter.test(channel)) list.add(channel);
 		}
 		return list.toArray(new NetChannel[list.size()]);
 	}
@@ -285,8 +274,15 @@ public abstract class NetServiceHandler implements NetService {
 			NetServiceEvent event = factory.createServiceEvent(this, this, NetServiceState.STOPPING);
 			if (publisher.publish(event).isCancelled()) return false;
 
+			// Destroy all channels.
+			NetChannel[] allChannels = getChannels();
+			for (NetChannel channel : allChannels) {
+				// Close and destroy channel.
+				channel.destroy();
+			}
 			// Do stop logic.
 			if (!doStop()) return false;
+			channels.clear();
 			state = NetServiceState.STOPPED;
 			stopTime = System.currentTimeMillis();
 

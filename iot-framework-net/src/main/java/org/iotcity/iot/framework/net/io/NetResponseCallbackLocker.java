@@ -22,11 +22,10 @@ public class NetResponseCallbackLocker<RES extends NetDataResponse> extends NetR
 
 	/**
 	 * Wait for asynchronous response.
-	 * @param timeout Response timeout milliseconds (60,000ms by default).
+	 * @param timeout The timeout value in milliseconds that waiting for a response data callback (required, the parameter value can not be less than or equal to 0).
 	 */
 	public void waitForResponse(long timeout) {
-		if (locked || callbacked) return;
-		if (timeout <= 0) timeout = 60000;
+		if (locked || callbacked || timeout <= 0) return;
 
 		synchronized (lock) {
 			// Check progress status.
@@ -47,7 +46,7 @@ public class NetResponseCallbackLocker<RES extends NetDataResponse> extends NetR
 			// Callback timeout status when there is no response data callback.
 			if (!callbacked) {
 				try {
-					callbackResult(new NetResponseResult<RES>(NetMessageStatus.TIMEOUT, null));
+					callbackResult(new NetResponseResult<RES>(NetMessageStatus.RESPONSE_TIMEOUT, null));
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -72,6 +71,7 @@ public class NetResponseCallbackLocker<RES extends NetDataResponse> extends NetR
 
 	@Override
 	public void onCallback(NetResponseResult<RES> result) throws Exception {
+		// There is no need to handle this logic.
 	}
 
 }

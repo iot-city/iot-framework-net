@@ -62,7 +62,7 @@ public abstract class NetChannelHandler implements NetChannel {
 	/**
 	 * The stored data of this channel.
 	 */
-	private Object soredData;
+	private Object storedData;
 
 	// --------------------------- Constructor ----------------------------
 
@@ -147,13 +147,13 @@ public abstract class NetChannelHandler implements NetChannel {
 
 	@Override
 	public void setStoreData(Object data) {
-		soredData = data;
+		storedData = data;
 	}
 
 	@Override
 	public <T> T getStoreData() {
 		@SuppressWarnings("unchecked")
-		T data = (T) soredData;
+		T data = (T) storedData;
 		return data;
 	}
 
@@ -195,6 +195,8 @@ public abstract class NetChannelHandler implements NetChannel {
 			NetChannelEvent event = factory.createChannelEvent(this, this, NetChannelState.CLOSING);
 			if (publisher.publish(event).isCancelled()) return false;
 
+			// Callback response on closing.
+			responsers.callbackOnClosing();
 			// Do close logic.
 			if (!doClose()) return false;
 			state = NetChannelState.CLOSED;
@@ -207,6 +209,26 @@ public abstract class NetChannelHandler implements NetChannel {
 		}
 		// Return closed successfully.
 		return true;
+	}
+
+	@Override
+	public void destroy() {
+		if (state == NetChannelState.CLOSED) return;
+		synchronized (stateLock) {
+			if (state == NetChannelState.CLOSED) return;
+			// Callback response on closing.
+			responsers.callbackOnClosing();
+			// Do close logic.
+			try {
+				doClose();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			state = NetChannelState.CLOSED;
+			closeTime = System.currentTimeMillis();
+			// Remove channel from service.
+			service.removeChannel(channelID);
+		}
 	}
 
 	// --------------------------- Abstract methods ----------------------------

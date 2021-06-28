@@ -116,8 +116,14 @@ public final class NetRequester {
 		if (callback != null) io.getResponser().addCallback(io, queue, request, responseClass, callback, timeout);
 
 		try {
+
 			// Send request to remote end.
-			return outbound.sendIO(io, request);
+			NetMessageStatus status = outbound.sendIO(io, request);
+			// Update sent time.
+			io.getChannel().updateSentTime();
+			// Return sent status.
+			return status;
+
 		} catch (Exception e) {
 
 			// Log error message.
@@ -157,8 +163,12 @@ public final class NetRequester {
 		// ------------------------ Send request to remote end ------------------------
 
 		try {
+
 			// Send request to remote end.
 			status = outbound.sendIO(io, request);
+			// Update sent time.
+			io.getChannel().updateSentTime();
+
 		} catch (Exception e) {
 
 			// Log error message.
@@ -253,6 +263,8 @@ public final class NetRequester {
 					// Read network data from I/O object.
 					@SuppressWarnings("unchecked")
 					RES response = (RES) inbound.readIO(io);
+					// Update message time.
+					if (response != null) io.getChannel().updateMessageTime();
 					// Return response result.
 					return new NetResponseResult<RES>(NetMessageStatus.OK, response);
 

@@ -93,6 +93,11 @@ public interface NetChannel {
 	boolean close() throws Exception;
 
 	/**
+	 * Destroy this channel without any event.
+	 */
+	void destroy();
+
+	/**
 	 * Gets the network I/O object that send a message to the remote end (returns null when this channel is not opened or this channel does not support sending request data to the remote end).
 	 */
 	NetIO<?, ?> getToRemoteIO();

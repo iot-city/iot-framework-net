@@ -33,11 +33,6 @@ public enum NetMessageStatus {
 	NO_MESSAGE_LISTENER,
 
 	/**
-	 * No response data.
-	 */
-	NO_RESPONSE,
-
-	/**
 	 * Error reading inbound data.
 	 */
 	READ_EXCEPTION,
@@ -58,9 +53,14 @@ public enum NetMessageStatus {
 	CALLBACK_EXCEPTION,
 
 	/**
-	 * Error response result.
+	 * Wrong response mode, in the life cycle of synchronous I/O request, the response result should be returned synchronously.
 	 */
-	RESPONSE_ERROR,
+	WRONG_RESPONSE_MODE,
+
+	/**
+	 * Waiting for data response timeout.
+	 */
+	RESPONSE_TIMEOUT,
 
 	/**
 	 * The data callback method was executed multiple times.
@@ -73,8 +73,13 @@ public enum NetMessageStatus {
 	INCOMPATIBLE,
 
 	/**
-	 * Waiting for data response timeout.
+	 * The network channel is being closed.
 	 */
-	TIMEOUT,
+	CHANNEL_CLOSING,
+
+	/**
+	 * The network channel has been closed.
+	 */
+	CHANNEL_CLOSED,
 
 }

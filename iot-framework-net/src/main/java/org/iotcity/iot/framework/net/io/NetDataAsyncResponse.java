@@ -20,7 +20,7 @@ public class NetDataAsyncResponse extends NetDataResponse {
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "messageQueue" is null or empty.
 	 */
 	public NetDataAsyncResponse(String messageQueue) throws IllegalArgumentException {
-		if (StringHelper.isEmpty(messageQueue)) throw new IllegalArgumentException("Parameter messageQueue can not be null!");
+		if (StringHelper.isEmpty(messageQueue)) throw new IllegalArgumentException("Parameter messageQueue can not be null or empty!");
 		this.messageQueue = messageQueue;
 	}
 
