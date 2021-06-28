@@ -1,6 +1,7 @@
 package org.iotcity.iot.framework.net.channel;
 
 import org.iotcity.iot.framework.net.io.NetIO;
+import org.iotcity.iot.framework.net.io.NetResponser;
 
 /**
  * The network channel.
@@ -60,6 +61,11 @@ public interface NetChannel {
 	void updateSentTime();
 
 	/**
+	 * Gets the responser to process asynchronous response callback message.
+	 */
+	NetResponser getResponser();
+
+	/**
 	 * Store a data object to this channel.
 	 * @param data Data object that need to be stored in this channel.
 	 */
@@ -89,6 +95,6 @@ public interface NetChannel {
 	/**
 	 * Gets the network I/O object that send a message to the remote end (returns null when this channel is not opened or this channel does not support sending request data to the remote end).
 	 */
-	NetIO<?, ?, ?> getToRemoteIO();
+	NetIO<?, ?> getToRemoteIO();
 
 }

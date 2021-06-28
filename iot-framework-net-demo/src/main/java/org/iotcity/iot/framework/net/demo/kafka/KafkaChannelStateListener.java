@@ -14,7 +14,7 @@ import org.iotcity.iot.framework.net.kafka.event.NetKafkaChannelEvent;
 public class KafkaChannelStateListener implements BusEventListener {
 
 	@Override
-	public boolean onEvent(BusEvent event) {
+	public boolean onEvent(BusEvent event) throws Exception {
 		return false;
 	}
 

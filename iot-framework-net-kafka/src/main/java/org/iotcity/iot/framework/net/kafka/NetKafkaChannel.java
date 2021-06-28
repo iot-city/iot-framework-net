@@ -20,7 +20,7 @@ public class NetKafkaChannel<K, V> extends NetChannelHandler {
 	}
 
 	@Override
-	public NetIO<?, ?, ?> getToRemoteIO() {
+	public NetIO<?, ?> getToRemoteIO() {
 		return null;
 	}
 

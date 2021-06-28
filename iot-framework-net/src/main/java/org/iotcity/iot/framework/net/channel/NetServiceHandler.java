@@ -33,6 +33,10 @@ public abstract class NetServiceHandler implements NetService {
 	 */
 	protected final String serviceID;
 	/**
+	 * The network service global configuration option data (not null).
+	 */
+	protected final NetServiceOptions options;
+	/**
 	 * Whether to use multithreading to process message data.
 	 */
 	protected final boolean multithreading;
@@ -87,15 +91,16 @@ public abstract class NetServiceHandler implements NetService {
 	 * @param manager The net manager object (required, not null).
 	 * @param serviceID The service unique identification (required, not null or empty).
 	 * @param multithreading Whether to use multithreading to process message data.
-	 * @param options The service configure options (optional).
+	 * @param options The network service global configuration option data (optional).
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "manager" or "serviceID" is null or empty.
 	 */
-	public NetServiceHandler(NetManager manager, String serviceID, boolean multithreading, NetServiceOptions options) {
+	public NetServiceHandler(NetManager manager, String serviceID, boolean multithreading, NetServiceOptions options) throws IllegalArgumentException {
 		if (manager == null || StringHelper.isEmpty(serviceID)) {
 			throw new IllegalArgumentException("Parameter service or channelID can not be null or empty!");
 		}
 		this.manager = manager;
 		this.serviceID = serviceID;
+		this.options = options == null ? new NetServiceOptions() : options;
 		this.multithreading = multithreading;
 		this.createTime = System.currentTimeMillis();
 		// Publish created event.
@@ -114,6 +119,11 @@ public abstract class NetServiceHandler implements NetService {
 	@Override
 	public String getServiceID() {
 		return serviceID;
+	}
+
+	@Override
+	public NetServiceOptions getOptions() {
+		return options;
 	}
 
 	@Override
@@ -181,28 +191,60 @@ public abstract class NetServiceHandler implements NetService {
 
 	@Override
 	public void addInbound(NetInbound<?, ?> inbound, int priority) {
+		if (inbound == null) return;
+		NetInboundContext context = inbounds.get(inbound.getIOClass());
+		if (context == null) {
+			synchronized (inbounds) {
+				context = inbounds.get(inbound.getIOClass());
+				if (context == null) {
+					context = new NetInboundContext();
+					inbounds.put(inbound.getIOClass(), context);
+				}
+			}
+		}
+		context.add(inbound, priority);
 	}
 
 	@Override
 	public void removeInbound(NetInbound<?, ?> inbound) {
+		if (inbound == null) return;
+		NetInboundContext context = inbounds.get(inbound.getIOClass());
+		if (context != null) context.remove(inbound);
 	}
 
 	@Override
-	public NetInbound<?, ?>[] getInbounds(Class<?> netIOClass) {
-		return null;
+	public NetInboundObject[] getInbounds(Class<?> netIOClass) {
+		NetInboundContext context = inbounds.get(netIOClass);
+		return context == null ? null : context.getInbounds();
 	}
 
 	@Override
 	public void addOutbound(NetOutbound<?, ?> outbound, int priority) {
+		if (outbound == null) return;
+		NetOutboundContext context = outbounds.get(outbound.getIOClass());
+		if (context == null) {
+			synchronized (outbounds) {
+				context = outbounds.get(outbound.getIOClass());
+				if (context == null) {
+					context = new NetOutboundContext();
+					outbounds.put(outbound.getIOClass(), context);
+				}
+			}
+		}
+		context.add(outbound, priority);
 	}
 
 	@Override
 	public void removeOutbound(NetOutbound<?, ?> outbound) {
+		if (outbound == null) return;
+		NetOutboundContext context = outbounds.get(outbound.getIOClass());
+		if (context != null) context.remove(outbound);
 	}
 
 	@Override
-	public NetOutbound<?, ?>[] getOutbounds(Class<?> netIOClass, Class<?> dataClass) {
-		return null;
+	public NetOutboundObject[] getOutbounds(Class<?> netIOClass) {
+		NetOutboundContext context = outbounds.get(netIOClass);
+		return context == null ? null : context.getOutbounds();
 	}
 
 	// --------------------------- Start and stop methods ----------------------------
@@ -217,8 +259,7 @@ public abstract class NetServiceHandler implements NetService {
 			NetEventFactory factory = this.getEventFactory();
 			BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
 			NetServiceEvent event = factory.createServiceEvent(this, this, NetServiceState.STARTING);
-			publisher.publish(event);
-			if (event.isCancelled()) return false;
+			if (publisher.publish(event).isCancelled()) return false;
 
 			// Do start logic.
 			if (!doStart()) return false;
@@ -242,8 +283,7 @@ public abstract class NetServiceHandler implements NetService {
 			NetEventFactory factory = this.getEventFactory();
 			BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
 			NetServiceEvent event = factory.createServiceEvent(this, this, NetServiceState.STOPPING);
-			publisher.publish(event);
-			if (event.isCancelled()) return false;
+			if (publisher.publish(event).isCancelled()) return false;
 
 			// Do stop logic.
 			if (!doStop()) return false;

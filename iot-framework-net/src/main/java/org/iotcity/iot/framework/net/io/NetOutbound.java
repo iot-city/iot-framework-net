@@ -7,7 +7,7 @@ package org.iotcity.iot.framework.net.io;
  * @author ardon
  * @date 2021-06-16
  */
-public interface NetOutbound<IO extends NetIO<?, ?, ?>, DATA extends NetData> {
+public interface NetOutbound<IO extends NetIO<?, ?>, DATA extends NetData> {
 
 	/**
 	 * Gets the network I/O object class.
@@ -22,16 +22,18 @@ public interface NetOutbound<IO extends NetIO<?, ?, ?>, DATA extends NetData> {
 	/**
 	 * Filter the I/O object for this outbound message (returns true if the data can be sent to remote end, otherwise, return false).
 	 * @param io The network I/O object.
+	 * @param data Data that needs to be sent to the remote end.
 	 * @return Returns true if the data can be sent to remote end, otherwise, return false.
 	 */
-	boolean filter(IO io, DATA data);
+	boolean filterIO(NetIO<?, ?> io, NetData data);
 
 	/**
 	 * Use the I/O object to send a message to the remote end.
 	 * @param io The network I/O object.
 	 * @param data Data that needs to be sent to the remote end.
 	 * @return The message process status.
+	 * @throws Exception Throw an exception when an error is encountered.
 	 */
-	NetMessageStatus send(IO io, DATA data);
+	NetMessageStatus sendIO(NetIO<?, ?> io, NetData data) throws Exception;
 
 }

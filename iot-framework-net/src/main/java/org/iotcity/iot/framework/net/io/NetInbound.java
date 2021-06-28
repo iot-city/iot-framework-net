@@ -7,7 +7,7 @@ package org.iotcity.iot.framework.net.io;
  * @author ardon
  * @date 2021-06-16
  */
-public interface NetInbound<IO extends NetIO<?, ?, ?>, DATA extends NetData> {
+public interface NetInbound<IO extends NetIO<?, ?>, DATA extends NetData> {
 
 	/**
 	 * Gets the network I/O object class.
@@ -24,13 +24,14 @@ public interface NetInbound<IO extends NetIO<?, ?, ?>, DATA extends NetData> {
 	 * @param io The network I/O object.
 	 * @return Returns true if the data can be read, otherwise, return false.
 	 */
-	boolean filter(IO io);
+	boolean filterIO(NetIO<?, ?> io);
 
 	/**
 	 * Read data from network I/O object (returns null when no data is read).
 	 * @param io The network I/O object.
 	 * @return The network data that has been read.
+	 * @throws Exception Throw an exception when an error is encountered.
 	 */
-	DATA read(IO io);
+	NetData readIO(NetIO<?, ?> io) throws Exception;
 
 }

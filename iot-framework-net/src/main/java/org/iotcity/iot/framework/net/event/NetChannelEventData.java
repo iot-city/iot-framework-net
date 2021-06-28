@@ -2,6 +2,7 @@ package org.iotcity.iot.framework.net.event;
 
 import org.iotcity.iot.framework.net.channel.NetChannel;
 import org.iotcity.iot.framework.net.channel.NetChannelState;
+import org.iotcity.iot.framework.net.channel.NetService;
 
 /**
  * The network channel event data for channel state changing.
@@ -10,6 +11,10 @@ import org.iotcity.iot.framework.net.channel.NetChannelState;
  */
 public class NetChannelEventData {
 
+	/**
+	 * The network service object.
+	 */
+	private final NetService service;
 	/**
 	 * The network channel object.
 	 */
@@ -25,8 +30,16 @@ public class NetChannelEventData {
 	 * @param state The network channel state.
 	 */
 	public NetChannelEventData(NetChannel channel, NetChannelState state) {
+		this.service = channel.getService();
 		this.channel = channel;
 		this.state = state;
+	}
+
+	/**
+	 * Gets the network service object.
+	 */
+	public NetService getService() {
+		return service;
 	}
 
 	/**

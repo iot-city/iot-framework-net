@@ -7,16 +7,18 @@ import org.iotcity.iot.framework.net.channel.NetServiceState;
 import org.iotcity.iot.framework.net.event.NetChannelEvent;
 import org.iotcity.iot.framework.net.event.NetChannelEventData;
 import org.iotcity.iot.framework.net.event.NetEventFactory;
-import org.iotcity.iot.framework.net.event.NetMessageAsyncEvent;
-import org.iotcity.iot.framework.net.event.NetMessageSyncEvent;
+import org.iotcity.iot.framework.net.event.NetMessageErrorEvent;
+import org.iotcity.iot.framework.net.event.NetMessageErrorEventData;
+import org.iotcity.iot.framework.net.event.NetMessageEvent;
+import org.iotcity.iot.framework.net.event.NetMessageEventCallback;
 import org.iotcity.iot.framework.net.event.NetServiceEvent;
 import org.iotcity.iot.framework.net.event.NetServiceEventData;
 import org.iotcity.iot.framework.net.event.NetSessionEvent;
 import org.iotcity.iot.framework.net.event.NetSessionEventData;
 import org.iotcity.iot.framework.net.io.NetData;
-import org.iotcity.iot.framework.net.io.NetDataResponse;
 import org.iotcity.iot.framework.net.io.NetIO;
-import org.iotcity.iot.framework.net.io.NetResponseCallback;
+import org.iotcity.iot.framework.net.io.NetMessageDirection;
+import org.iotcity.iot.framework.net.io.NetMessageStatus;
 import org.iotcity.iot.framework.net.session.NetSession;
 import org.iotcity.iot.framework.net.session.NetSessionState;
 
@@ -42,13 +44,13 @@ public class NetKafkaEventFactory implements NetEventFactory {
 	}
 
 	@Override
-	public NetMessageAsyncEvent createMessageAsyncEvent(Object source, NetIO<?, ?, ?> io, NetData request, NetResponseCallback<NetDataResponse> callbacker) {
-		return new NetKafkaMessageAsyncEvent(source, io, request, callbacker);
+	public NetMessageEvent createMessageEvent(Object source, NetIO<?, ?> io, NetData request, NetMessageEventCallback callback) throws IllegalArgumentException {
+		return new NetKafkaMessageEvent(source, io, request, callback);
 	}
 
 	@Override
-	public NetMessageSyncEvent createMessageSyncEvent(Object source, NetIO<?, ?, ?> io, NetData request) {
-		return new NetKafkaMessageSyncEvent(source, io, request);
+	public NetMessageErrorEvent createMessageErrorEvent(Object source, NetMessageDirection direction, NetIO<?, ?> messageIO, NetData requestData, NetData responseData, Exception[] exceptions, NetMessageStatus errorStatus) throws IllegalArgumentException {
+		return new NetKafkaMessageErrorEvent(source, new NetMessageErrorEventData(direction, messageIO, requestData, responseData, exceptions, errorStatus));
 	}
 
 }

@@ -24,7 +24,7 @@ public class NetData {
 	 * Whether this data is request data.
 	 * @return Return true when used as request data and false when used as response data.
 	 */
-	public boolean isRequest() {
+	public final boolean isRequest() {
 		return request;
 	}
 

@@ -10,7 +10,9 @@ import java.lang.reflect.Type;
  * @author ardon
  * @date 2021-06-16
  */
-public abstract class NetInboundHandler<IO extends NetIO<?, ?, ?>, DATA extends NetData> implements NetInbound<IO, DATA> {
+public abstract class NetInboundHandler<IO extends NetIO<?, ?>, DATA extends NetData> implements NetInbound<IO, DATA> {
+
+	// --------------------------- Private fields ----------------------------
 
 	/**
 	 * The network I/O object class.
@@ -21,6 +23,8 @@ public abstract class NetInboundHandler<IO extends NetIO<?, ?, ?>, DATA extends 
 	 */
 	private final Class<?> dataClass;
 
+	// --------------------------- Constructor ----------------------------
+
 	/**
 	 * Constructor for network inbound handler.
 	 */
@@ -29,6 +33,18 @@ public abstract class NetInboundHandler<IO extends NetIO<?, ?, ?>, DATA extends 
 		this.ioClass = (Class<?>) types[0];
 		this.dataClass = (Class<?>) types[1];
 	}
+
+	/**
+	 * Constructor for network inbound handler.
+	 * @param ioClass The network I/O object class.
+	 * @param dataClass The network data object class.
+	 */
+	public NetInboundHandler(Class<IO> ioClass, Class<DATA> dataClass) {
+		this.ioClass = ioClass;
+		this.dataClass = dataClass;
+	}
+
+	// --------------------------- Override methods ----------------------------
 
 	@Override
 	public Class<?> getIOClass() {
@@ -39,5 +55,34 @@ public abstract class NetInboundHandler<IO extends NetIO<?, ?, ?>, DATA extends 
 	public Class<?> getDataClass() {
 		return dataClass;
 	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public boolean filterIO(NetIO<?, ?> io) {
+		return filter((IO) io);
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public NetData readIO(NetIO<?, ?> io) throws Exception {
+		return read((IO) io);
+	}
+
+	// --------------------------- Abstract methods ----------------------------
+
+	/**
+	 * Filter the I/O object for this inbound message (returns true if the data can be read, otherwise, return false).
+	 * @param io The network I/O object.
+	 * @return Returns true if the data can be read, otherwise, return false.
+	 */
+	public abstract boolean filter(IO io);
+
+	/**
+	 * Read data from network I/O object (returns null when no data is read).
+	 * @param io The network I/O object.
+	 * @return The network data that has been read.
+	 * @throws Exception Throw an exception when an error is encountered.
+	 */
+	public abstract DATA read(IO io) throws Exception;
 
 }

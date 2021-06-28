@@ -23,6 +23,11 @@ public interface NetService {
 	String getServiceID();
 
 	/**
+	 * Gets the network service global configuration option data (returns not null).
+	 */
+	NetServiceOptions getOptions();
+
+	/**
 	 * Determine whether to use multithreading to process message data.
 	 */
 	boolean isMultithreading();
@@ -84,7 +89,7 @@ public interface NetService {
 	/**
 	 * Add inbound message processing object to this service.
 	 * @param inbound Network inbound message processing object.
-	 * @param priority Inbound message processing priority.
+	 * @param priority Inbound message processing priority (the priority with the highest value is called first, 0 by default).
 	 */
 	void addInbound(NetInbound<?, ?> inbound, int priority);
 
@@ -95,16 +100,16 @@ public interface NetService {
 	void removeInbound(NetInbound<?, ?> inbound);
 
 	/**
-	 * Gets inbound message processing objects from this service (returns null if no inbound for current I/O object).
-	 * @param netIOClass The network I/O object class.
+	 * Gets inbound message processing objects from this service (returns null if there is no inbound for current I/O object).
+	 * @param netIOClass The network I/O object class (extended from: {@link org.iotcity.iot.framework.net.io.NetIO }).
 	 * @return Inbound message processing objects.
 	 */
-	NetInbound<?, ?>[] getInbounds(Class<?> netIOClass);
+	NetInboundObject[] getInbounds(Class<?> netIOClass);
 
 	/**
 	 * Add outbound message processing object to this service.
 	 * @param outbound Network outbound message processing object.
-	 * @param priority Outbound message processing priority.
+	 * @param priority Outbound message processing priority (the priority with the highest value is called first, 0 by default).
 	 */
 	void addOutbound(NetOutbound<?, ?> outbound, int priority);
 
@@ -115,12 +120,11 @@ public interface NetService {
 	void removeOutbound(NetOutbound<?, ?> outbound);
 
 	/**
-	 * Gets outbound message processing objects from this service (returns null if no outbound for current I/O object).
-	 * @param netIOClass The network I/O object class.
-	 * @param dataClass The outbound message data class.
+	 * Gets outbound message processing objects from this service (returns null if there is no outbound for current I/O object).
+	 * @param netIOClass The network I/O object class (extended from: {@link org.iotcity.iot.framework.net.io.NetIO }).
 	 * @return Outbound message processing objects.
 	 */
-	NetOutbound<?, ?>[] getOutbounds(Class<?> netIOClass, Class<?> dataClass);
+	NetOutboundObject[] getOutbounds(Class<?> netIOClass);
 
 	/**
 	 * Start this service.

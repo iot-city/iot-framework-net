@@ -5,6 +5,7 @@ import org.iotcity.iot.framework.core.bus.BusEventPublisher;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
 import org.iotcity.iot.framework.net.event.NetChannelEvent;
 import org.iotcity.iot.framework.net.event.NetEventFactory;
+import org.iotcity.iot.framework.net.io.NetResponser;
 
 /**
  * The network channel handler.
@@ -23,6 +24,10 @@ public abstract class NetChannelHandler implements NetChannel {
 	 * Network channel unique identification.
 	 */
 	protected final String channelID;
+	/**
+	 * The responser context to process asynchronous response callback message.
+	 */
+	protected final NetResponser responsers;
 	/**
 	 * The lock object for network state updating.
 	 */
@@ -67,13 +72,14 @@ public abstract class NetChannelHandler implements NetChannel {
 	 * @param channelID Network channel unique identification (required, not null).
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "service" or "channelID" is null or empty.
 	 */
-	public NetChannelHandler(NetServiceHandler service, String channelID) {
+	public NetChannelHandler(NetServiceHandler service, String channelID) throws IllegalArgumentException {
 		if (service == null || StringHelper.isEmpty(channelID)) {
 			throw new IllegalArgumentException("Parameter service or channelID can not be null or empty!");
 		}
 		this.service = service;
 		this.channelID = channelID;
 		this.createTime = System.currentTimeMillis();
+		this.responsers = new NetResponser(service.getOptions().defaultCallbackTimeout);
 		// Publish created event.
 		NetEventFactory factory = service.getEventFactory();
 		BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
@@ -135,6 +141,11 @@ public abstract class NetChannelHandler implements NetChannel {
 	}
 
 	@Override
+	public NetResponser getResponser() {
+		return responsers;
+	}
+
+	@Override
 	public void setStoreData(Object data) {
 		soredData = data;
 	}
@@ -156,8 +167,7 @@ public abstract class NetChannelHandler implements NetChannel {
 			NetEventFactory factory = service.getEventFactory();
 			BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
 			NetChannelEvent event = factory.createChannelEvent(this, this, NetChannelState.OPENING);
-			publisher.publish(event);
-			if (event.isCancelled()) return false;
+			if (publisher.publish(event).isCancelled()) return false;
 
 			// Do open logic.
 			if (!doOpen()) return false;
@@ -183,8 +193,7 @@ public abstract class NetChannelHandler implements NetChannel {
 			NetEventFactory factory = service.getEventFactory();
 			BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
 			NetChannelEvent event = factory.createChannelEvent(this, this, NetChannelState.CLOSING);
-			publisher.publish(event);
-			if (event.isCancelled()) return false;
+			if (publisher.publish(event).isCancelled()) return false;
 
 			// Do close logic.
 			if (!doClose()) return false;
