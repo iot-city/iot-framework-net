@@ -18,7 +18,7 @@ import org.iotcity.iot.framework.net.event.NetMessageEventCallback;
 public final class NetMessager {
 
 	/**
-	 * Use the network I/O object to read and process inbound data.
+	 * Use the network I/O object to read and process inbound data (returns not null).
 	 * @param io The network input and output object (required, can not be null).
 	 * @return The message process status.
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "io" is null.
@@ -103,7 +103,7 @@ public final class NetMessager {
 	}
 
 	/**
-	 * Handle request data from the remote end.
+	 * Handle request data from the remote end (returns not null)
 	 * @param io The network input and output object.
 	 * @param request The network request data object.
 	 * @return The message process status.
@@ -186,7 +186,7 @@ public final class NetMessager {
 	}
 
 	/**
-	 * Send response message to remote end.
+	 * Send response message to remote end (returns not null)
 	 * @param io The network input and output object.
 	 * @param request The network request data object.
 	 * @param response The network response data object.
@@ -215,11 +215,11 @@ public final class NetMessager {
 					// Filter I/O and network data.
 					if (!outbound.filterIO(io, response)) continue;
 					// Send response to remote end.
-					NetMessageStatus status = outbound.sendIO(io, response);
+					NetMessageStatus status = outbound.sendIO(io, response, 0);
 					// Update sent time.
 					io.getChannel().updateSentTime();
 					// Return sent status.
-					return status;
+					return status == null ? NetMessageStatus.INCOMPATIBLE : status;
 
 				} catch (Exception e) {
 

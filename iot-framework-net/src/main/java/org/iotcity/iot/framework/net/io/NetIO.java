@@ -30,6 +30,11 @@ public interface NetIO<READER, SENDER> {
 	boolean isAsynchronous();
 
 	/**
+	 * Determines whether to use multithreading to process request and response data when allowed.
+	 */
+	boolean isMultithreading();
+
+	/**
 	 * Gets inbound message processing objects of this I/O object (returns null if there is no inbound for current I/O object).
 	 * @return Inbound message processing objects.
 	 */

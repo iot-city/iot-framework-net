@@ -64,8 +64,8 @@ public abstract class NetOutboundHandler<IO extends NetIO<?, ?>, DATA extends Ne
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public NetMessageStatus sendIO(NetIO<?, ?> io, NetData data) throws Exception {
-		return send((IO) io, (DATA) data);
+	public NetMessageStatus sendIO(NetIO<?, ?> io, NetData data, long timeout) throws Exception {
+		return send((IO) io, (DATA) data, timeout);
 	}
 
 	// --------------------------- Abstract methods ----------------------------
@@ -82,9 +82,12 @@ public abstract class NetOutboundHandler<IO extends NetIO<?, ?>, DATA extends Ne
 	 * Use the I/O object to send a message to the remote end.
 	 * @param io The network I/O object.
 	 * @param data Data that needs to be sent to the remote end.
+	 * @param timeout The timeout value in milliseconds. <br/>
+	 *            1. If it is sending a request data to the remote end, this value is the timeout value that waiting for a response data from remote end. <br/>
+	 *            2. If it is sending a response data to the remote end, this value will be 0.
 	 * @return The message process status.
 	 * @throws Exception Throw an exception when an error is encountered.
 	 */
-	public abstract NetMessageStatus send(IO io, DATA data) throws Exception;
+	public abstract NetMessageStatus send(IO io, DATA data, long timeout) throws Exception;
 
 }

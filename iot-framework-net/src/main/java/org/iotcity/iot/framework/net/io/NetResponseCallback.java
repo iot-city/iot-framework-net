@@ -23,13 +23,14 @@ public abstract class NetResponseCallback<RES extends NetDataResponse> {
 
 	/**
 	 * Callback response data processing.
+	 * @param io The network input and output object (required, can not be null).
 	 * @param status The network message status (required, can not be null).
 	 * @param response The network response data object (optional, set it to null when the response is not required).
 	 * @throws Exception Throw an exception when an error is encountered.
 	 */
 	@SuppressWarnings("unchecked")
-	public void callbackResponse(NetMessageStatus status, NetDataResponse response) throws Exception {
-		callbackResult(new NetResponseResult<RES>(status, (RES) response));
+	public void callbackResponse(NetIO<?, ?> io, NetMessageStatus status, NetDataResponse response) throws Exception {
+		callbackResult(new NetResponseResult<RES>(io, status, (RES) response));
 	}
 
 	/**
@@ -38,7 +39,7 @@ public abstract class NetResponseCallback<RES extends NetDataResponse> {
 	 * @throws Exception Throw an exception when an error is encountered.
 	 */
 	public void callbackResult(NetResponseResult<RES> result) throws Exception {
-		if (callbacked) return;
+		if (callbacked || result == null) return;
 		synchronized (lock) {
 			if (callbacked) return;
 			callbacked = true;

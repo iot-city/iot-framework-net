@@ -17,7 +17,7 @@ public class KafkaStringOutboundRequst extends NetKafkaOutbound<String, String, 
 	}
 
 	@Override
-	public NetMessageStatus send(NetKafkaIO<String, String> io, NetDemoRequest data) {
+	public NetMessageStatus send(NetKafkaIO<String, String> io, NetDemoRequest data, long timeout) throws Exception {
 		return null;
 	}
 

@@ -52,6 +52,10 @@ public abstract class NetServiceHandler implements NetService {
 	// --------------------------- Private fields ----------------------------
 
 	/**
+	 * Whether to use multithreading to process request and response data when allowed.
+	 */
+	private final boolean multithreading;
+	/**
 	 * The inbounds map (the key is NetIO class, the value is inbound context object).
 	 */
 	private final Map<Class<?>, NetInboundContext> inbounds = new HashMap<>();
@@ -86,17 +90,21 @@ public abstract class NetServiceHandler implements NetService {
 	 * Constructor for network service handler.
 	 * @param manager The net manager object (required, can not be null).
 	 * @param serviceID The service unique identification (required, can not be or empty).
+	 * @param multithreading Whether to use multithreading to process request and response data when allowed.
 	 * @param options The network service global configuration option data (optional).
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "manager" or "serviceID" is null or empty.
 	 */
-	public NetServiceHandler(NetManager manager, String serviceID, NetServiceOptions options) throws IllegalArgumentException {
+	public NetServiceHandler(NetManager manager, String serviceID, boolean multithreading, NetServiceOptions options) throws IllegalArgumentException {
 		if (manager == null || StringHelper.isEmpty(serviceID)) {
 			throw new IllegalArgumentException("Parameter service or channelID can not be null or empty!");
 		}
 		this.manager = manager;
 		this.serviceID = serviceID;
+		this.multithreading = multithreading;
 		this.options = options == null ? new NetServiceOptions() : options;
 		this.createTime = System.currentTimeMillis();
+		// Add this service to manager.
+		manager.addService(this);
 		// Publish created event.
 		NetEventFactory factory = this.getEventFactory();
 		BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
@@ -116,8 +124,18 @@ public abstract class NetServiceHandler implements NetService {
 	}
 
 	@Override
-	public NetServiceOptions getOptions() {
-		return options;
+	public boolean isMultithreading() {
+		return multithreading;
+	}
+
+	@Override
+	public int getMultithreadingPriority() {
+		return options.multithreadingPriority;
+	}
+
+	@Override
+	public long getDefaultCallbackTimeout() {
+		return options.defaultCallbackTimeout;
 	}
 
 	@Override

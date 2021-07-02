@@ -14,7 +14,7 @@ import org.iotcity.iot.framework.net.event.NetMessageErrorEvent;
  * @author ardon
  * @date 2021-06-25
  */
-public class NetResponser {
+public final class NetResponser {
 
 	/**
 	 * The global configuration timeout value.
@@ -94,7 +94,7 @@ public class NetResponser {
 			NetResponseCallback<?> callback = object.callback;
 			try {
 				// Execute callback.
-				callback.callbackResponse(status, response);
+				callback.callbackResponse(io, status, response);
 				successes++;
 			} catch (Exception e) {
 				// Log error message.
@@ -137,7 +137,7 @@ public class NetResponser {
 				NetResponseCallback<?> callback = object.callback;
 				try {
 					// Execute callback.
-					callback.callbackResponse(status, null);
+					callback.callbackResponse(object.io, status, null);
 				} catch (Exception e) {
 					// Log error message.
 					FrameworkNet.getLogger().error(FrameworkNet.getLocale().text("net.message.logic.res.err", object.responseClass.getName(), e.getMessage()), e);
@@ -178,7 +178,7 @@ public class NetResponser {
 				NetResponseCallback<?> callback = object.callback;
 				try {
 					// Execute callback.
-					callback.callbackResponse(status, null);
+					callback.callbackResponse(object.io, status, null);
 				} catch (Exception e) {
 					// Log error message.
 					FrameworkNet.getLogger().error(FrameworkNet.getLocale().text("net.message.logic.res.err", object.responseClass.getName(), e.getMessage()), e);

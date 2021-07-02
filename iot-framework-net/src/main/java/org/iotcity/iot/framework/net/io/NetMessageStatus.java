@@ -18,6 +18,11 @@ public enum NetMessageStatus {
 	ACCEPTED,
 
 	/**
+	 * Business logic processing failed.
+	 */
+	LOGICAL_FAILED,
+
+	/**
 	 * Inbound processing object not found.
 	 */
 	NO_INBOUND,

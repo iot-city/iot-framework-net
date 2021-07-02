@@ -14,8 +14,8 @@ public class NetKafkaService extends NetServiceHandler {
 
 	private final NetEventFactory eventFactory = new NetKafkaEventFactory();
 
-	public NetKafkaService(NetManager manager, String serviceID, NetServiceOptions options) {
-		super(manager, serviceID, options);
+	public NetKafkaService(NetManager manager, String serviceID, boolean multithreading, NetServiceOptions options) throws IllegalArgumentException {
+		super(manager, serviceID, multithreading, options);
 	}
 
 	@Override

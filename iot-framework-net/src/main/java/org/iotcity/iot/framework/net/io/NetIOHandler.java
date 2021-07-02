@@ -66,6 +66,11 @@ public class NetIOHandler<READER, SENDER> implements NetIO<READER, SENDER> {
 	}
 
 	@Override
+	public boolean isMultithreading() {
+		return service.isMultithreading();
+	}
+
+	@Override
 	public NetInboundObject[] getInbounds() {
 		return service.getInbounds(getClass());
 	}

@@ -23,9 +23,19 @@ public interface NetService {
 	String getServiceID();
 
 	/**
-	 * Gets the network service global configuration option data (returns not null).
+	 * Determines whether to use multithreading to process request and response data when allowed.
 	 */
-	NetServiceOptions getOptions();
+	boolean isMultithreading();
+
+	/**
+	 * Gets the thread priority of the current network service (0 by default, the higher the value, the higher the priority, the higher value will be executed first).
+	 */
+	int getMultithreadingPriority();
+
+	/**
+	 * Gets the global configuration timeout value in milliseconds that waiting for a response data callback (the default timeout value is 120000 ms).
+	 */
+	long getDefaultCallbackTimeout();
 
 	/**
 	 * Gets the current state of this service.

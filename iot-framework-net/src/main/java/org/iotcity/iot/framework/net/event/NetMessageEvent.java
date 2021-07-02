@@ -105,11 +105,13 @@ public class NetMessageEvent extends BusEvent {
 
 	/**
 	 * Send a response message to the remote end.
-	 * @param status The business logic processing status of the response.
+	 * @param status The business logic processing status of the response (required, can not be null).
 	 * @param response The response data object (set to null when there is no callback data).
 	 * @return The sending status of the response data.
+	 * @throws IllegalArgumentException An error will be thrown when the parameter "status" is null.
 	 */
-	public NetMessageStatus sendResponse(NetMessageStatus status, NetDataResponse response) {
+	public NetMessageStatus sendResponse(NetMessageStatus status, NetDataResponse response) throws IllegalArgumentException {
+		if (status == null) throw new IllegalArgumentException("Parameter status can not be null!");
 		if (calledSending) return NetMessageStatus.DUPLICATED;
 		synchronized (lock) {
 			if (calledSending) return NetMessageStatus.DUPLICATED;

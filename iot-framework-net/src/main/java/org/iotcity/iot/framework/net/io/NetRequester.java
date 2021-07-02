@@ -18,7 +18,7 @@ public final class NetRequester {
 	// ---------------------------------------- ASYNCHRONOUS REQUEST METHODS ----------------------------------------
 
 	/**
-	 * Send request data using asynchronous response mode.
+	 * Send request data using asynchronous response mode (returns not null).
 	 * @param <REQ> The request data type.
 	 * @param <RES> The response data type.
 	 * @param io The network input and output object (required, can not be null).
@@ -67,10 +67,10 @@ public final class NetRequester {
 				// Check asynchronous mode.
 				if (io.isAsynchronous()) {
 					// Send request by using asynchronous mode.
-					return asyncRequestCallback(outbound, io, request, responseClass, callback, timeout);
+					return asyncRequestWithCallback(outbound, io, request, responseClass, callback, timeout);
 				} else {
 					// Send request by using synchronous mode.
-					return syncRequestCallback(outbound, io, request, responseClass, callback, timeout);
+					return syncRequestWithCallback(outbound, io, request, responseClass, callback, timeout);
 				}
 
 			}
@@ -86,7 +86,7 @@ public final class NetRequester {
 	}
 
 	/**
-	 * Send asynchronous request to remote end.
+	 * Send asynchronous request to remote end (returns not null).
 	 * @param <REQ> The request data type.
 	 * @param <RES> The response data type.
 	 * @param outbound Network outbound data processing object (required, can not be null).
@@ -97,7 +97,7 @@ public final class NetRequester {
 	 * @param timeout The timeout value in milliseconds that waiting for a response data callback (optional, the global configuration timeout is used when the parameter value is less than or equal to 0).
 	 * @return The message process status.
 	 */
-	private <REQ extends NetDataRequest, RES extends NetDataResponse> NetMessageStatus asyncRequestCallback(NetOutbound<?, ?> outbound, NetIO<?, ?> io, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
+	private <REQ extends NetDataRequest, RES extends NetDataResponse> NetMessageStatus asyncRequestWithCallback(NetOutbound<?, ?> outbound, NetIO<?, ?> io, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
 		// Check asynchronous interface.
 		if (!(request instanceof NetDataAsyncRequest)) {
 
@@ -118,11 +118,11 @@ public final class NetRequester {
 		try {
 
 			// Send request to remote end.
-			NetMessageStatus status = outbound.sendIO(io, request);
+			NetMessageStatus status = outbound.sendIO(io, request, timeout);
 			// Update sent time.
 			io.getChannel().updateSentTime();
 			// Return sent status.
-			return status;
+			return status == null ? NetMessageStatus.INCOMPATIBLE : status;
 
 		} catch (Exception e) {
 
@@ -145,7 +145,7 @@ public final class NetRequester {
 	}
 
 	/**
-	 * Send synchronous request to remote end.
+	 * Send synchronous request to remote end (returns not null).
 	 * @param <REQ> The request data type.
 	 * @param <RES> The response data type.
 	 * @param outbound Network outbound data processing object (required, can not be null).
@@ -156,7 +156,7 @@ public final class NetRequester {
 	 * @param timeout The timeout value in milliseconds that waiting for a response data callback (optional, the global configuration timeout is used when the parameter value is less than or equal to 0).
 	 * @return The message process status.
 	 */
-	private <REQ extends NetDataRequest, RES extends NetDataResponse> NetMessageStatus syncRequestCallback(NetOutbound<?, ?> outbound, NetIO<?, ?> io, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
+	private <REQ extends NetDataRequest, RES extends NetDataResponse> NetMessageStatus syncRequestWithCallback(NetOutbound<?, ?> outbound, NetIO<?, ?> io, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
 		// Define message status.
 		NetMessageStatus status;
 
@@ -165,7 +165,7 @@ public final class NetRequester {
 		try {
 
 			// Send request to remote end.
-			status = outbound.sendIO(io, request);
+			status = outbound.sendIO(io, request, timeout);
 			// Update sent time.
 			io.getChannel().updateSentTime();
 
@@ -185,7 +185,7 @@ public final class NetRequester {
 
 				try {
 					// Callback response result.
-					callback.callbackResult(new NetResponseResult<RES>(status, null));
+					callback.callbackResult(new NetResponseResult<RES>(io, status, null));
 				} catch (Exception e2) {
 					// Log error message.
 					FrameworkNet.getLogger().error(FrameworkNet.getLocale().text("net.message.logic.res.err", responseClass.getName(), e2.getMessage()), e2);
@@ -230,12 +230,12 @@ public final class NetRequester {
 			return result.getStatus();
 		} else {
 			// Return error message status.
-			return status;
+			return status == null ? NetMessageStatus.INCOMPATIBLE : status;
 		}
 	}
 
 	/**
-	 * Read synchronous response from remote end.
+	 * Read synchronous response from remote end (returns not null).
 	 * @param <REQ> The request data type.
 	 * @param <RES> The response data type.
 	 * @param io The network input and output object (required, can not be null).
@@ -266,7 +266,7 @@ public final class NetRequester {
 					// Update message time.
 					if (response != null) io.getChannel().updateMessageTime();
 					// Return response result.
-					return new NetResponseResult<RES>(NetMessageStatus.OK, response);
+					return new NetResponseResult<RES>(io, NetMessageStatus.OK, response);
 
 				} catch (Exception e) {
 
@@ -277,7 +277,7 @@ public final class NetRequester {
 						e
 					}, NetMessageStatus.READ_EXCEPTION);
 					// Return the exception state of execution process.
-					return new NetResponseResult<RES>(NetMessageStatus.READ_EXCEPTION, null);
+					return new NetResponseResult<RES>(io, NetMessageStatus.READ_EXCEPTION, null);
 
 				}
 
@@ -289,13 +289,13 @@ public final class NetRequester {
 		// Publish an error event.
 		publishErrorEvent(NetMessageDirection.FROM_REMOTE_RESPONSE, io, request, null, null, NetMessageStatus.NO_INBOUND);
 		// Return no inbound by default.
-		return new NetResponseResult<RES>(NetMessageStatus.NO_INBOUND, null);
+		return new NetResponseResult<RES>(io, NetMessageStatus.NO_INBOUND, null);
 	}
 
 	// ---------------------------------------- SYNCHRONOUS REQUEST METHODS ----------------------------------------
 
 	/**
-	 * Send request data using synchronous response mode.
+	 * Send request data using synchronous response mode (returns not null).
 	 * @param <REQ> The request data type.
 	 * @param <RES> The response data type.
 	 * @param io The network input and output object (required, can not be null).
@@ -336,7 +336,7 @@ public final class NetRequester {
 						e
 					}, NetMessageStatus.SEND_EXCEPTION);
 					// Return the exception state of execution process.
-					return new NetResponseResult<RES>(NetMessageStatus.SEND_EXCEPTION, null);
+					return new NetResponseResult<RES>(io, NetMessageStatus.SEND_EXCEPTION, null);
 
 				}
 
@@ -346,26 +346,28 @@ public final class NetRequester {
 				if (io.isAsynchronous()) {
 
 					// Send request by using asynchronous mode.
-					NetMessageStatus status = asyncRequestCallback(outbound, io, request, responseClass, callback, timeout);
+					NetMessageStatus status = asyncRequestWithCallback(outbound, io, request, responseClass, callback, timeout);
 					// Check send status.
 					if (status == NetMessageStatus.ACCEPTED || status == NetMessageStatus.OK) {
 						// Waiting for asynchronous response.
-						callback.waitForResponse(timeout);
-						// Return response result.
-						return callback.getResult();
+						callback.waitForResponse(io, timeout);
+						// Get response result.
+						NetResponseResult<RES> result = callback.getResult();
+						// Result result.
+						return result == null ? new NetResponseResult<RES>(io, NetMessageStatus.WRONG_RESPONSE_MODE, null) : result;
 					} else {
 						// Returns the failed result.
-						return new NetResponseResult<RES>(status, null);
+						return new NetResponseResult<RES>(io, status, null);
 					}
 
 				} else {
 
 					// Send request by using synchronous mode.
-					NetMessageStatus status = syncRequestCallback(outbound, io, request, responseClass, callback, timeout);
+					NetMessageStatus status = syncRequestWithCallback(outbound, io, request, responseClass, callback, timeout);
 					// Get response result.
 					NetResponseResult<RES> result = callback.getResult();
 					// Result result.
-					return result == null ? new NetResponseResult<RES>(status, null) : result;
+					return result == null ? new NetResponseResult<RES>(io, status, null) : result;
 
 				}
 
@@ -377,7 +379,7 @@ public final class NetRequester {
 		// Publish an error event.
 		publishErrorEvent(NetMessageDirection.TO_REMOTE_REQUEST, io, request, null, null, NetMessageStatus.NO_OUTBOUND);
 		// Return no outbound object by default.
-		return new NetResponseResult<RES>(NetMessageStatus.NO_OUTBOUND, null);
+		return new NetResponseResult<RES>(io, NetMessageStatus.NO_OUTBOUND, null);
 	}
 
 	// ---------------------------------------- PRIVATE COMMON METHODS ----------------------------------------

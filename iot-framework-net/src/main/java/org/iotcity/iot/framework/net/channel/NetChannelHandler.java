@@ -74,12 +74,12 @@ public abstract class NetChannelHandler implements NetChannel {
 	 */
 	public NetChannelHandler(NetServiceHandler service, String channelID) throws IllegalArgumentException {
 		if (service == null || StringHelper.isEmpty(channelID)) {
-			throw new IllegalArgumentException("Parameter service or channelID can not be null or empty!");
+			throw new IllegalArgumentException("Parameter service and channelID can not be null or empty!");
 		}
 		this.service = service;
 		this.channelID = channelID;
 		this.createTime = System.currentTimeMillis();
-		this.responsers = new NetResponser(service.getOptions().defaultCallbackTimeout);
+		this.responsers = new NetResponser(service.getDefaultCallbackTimeout());
 		// Publish created event.
 		NetEventFactory factory = service.getEventFactory();
 		BusEventPublisher publisher = IoTFramework.getBusEventPublisher();

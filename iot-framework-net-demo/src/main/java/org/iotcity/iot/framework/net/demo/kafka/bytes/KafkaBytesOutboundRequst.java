@@ -17,7 +17,7 @@ public class KafkaBytesOutboundRequst extends NetKafkaOutbound<String, byte[], N
 	}
 
 	@Override
-	public NetMessageStatus send(NetKafkaIO<String, byte[]> io, NetDemoRequest data) {
+	public NetMessageStatus send(NetKafkaIO<String, byte[]> io, NetDemoRequest data, long timeout) throws Exception {
 		return null;
 	}
 
