@@ -31,6 +31,22 @@ public final class NetRequester {
 	 */
 	public <REQ extends NetDataRequest, RES extends NetDataResponse> NetMessageStatus asyncRequest(NetIO<?, ?> io, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
 		if (io == null || request == null || responseClass == null) throw new IllegalArgumentException("Parameter io, request and responseClass can not be null!");
+
+		// Check channel and service state.
+		if (io.getChannel().isClosed() || io.getService().isStopped()) {
+			// Close the channel.
+			try {
+				io.getChannel().close();
+				if (callback != null) {
+					callback.callbackResult(new NetResponseResult<RES>(io, NetMessageStatus.CHANNEL_CLOSED, null));
+				}
+			} catch (Exception e) {
+				FrameworkNet.getLogger().error(e);
+			}
+			// Return the close state.
+			return NetMessageStatus.CHANNEL_CLOSED;
+		}
+
 		// Get request data class.
 		Class<?> requestClass = request.getClass();
 		// Fix timeout value.
@@ -307,6 +323,19 @@ public final class NetRequester {
 	 */
 	public <REQ extends NetDataRequest, RES extends NetDataResponse> NetResponseResult<RES> syncRequest(NetIO<?, ?> io, REQ request, Class<RES> responseClass, long timeout) throws IllegalArgumentException {
 		if (io == null || request == null || responseClass == null) throw new IllegalArgumentException("Parameter io, request and responseClass can not be null!");
+
+		// Check channel and service state.
+		if (io.getChannel().isClosed() || io.getService().isStopped()) {
+			// Close the channel.
+			try {
+				io.getChannel().close();
+			} catch (Exception e) {
+				FrameworkNet.getLogger().error(e);
+			}
+			// Return the close state.
+			return new NetResponseResult<RES>(io, NetMessageStatus.CHANNEL_CLOSED, null);
+		}
+
 		// Get request data class.
 		Class<?> requestClass = request.getClass();
 		// Fix timeout value.

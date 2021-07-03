@@ -3,6 +3,7 @@ package org.iotcity.iot.framework.net.channel;
 import org.iotcity.iot.framework.IoTFramework;
 import org.iotcity.iot.framework.core.bus.BusEventPublisher;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
+import org.iotcity.iot.framework.net.FrameworkNet;
 import org.iotcity.iot.framework.net.event.NetChannelEvent;
 import org.iotcity.iot.framework.net.event.NetEventFactory;
 import org.iotcity.iot.framework.net.io.NetResponser;
@@ -27,7 +28,7 @@ public abstract class NetChannelHandler implements NetChannel {
 	/**
 	 * The responser context to process asynchronous response callback message.
 	 */
-	protected final NetResponser responsers;
+	protected final NetResponser responser;
 	/**
 	 * The lock object for network state updating.
 	 */
@@ -79,7 +80,7 @@ public abstract class NetChannelHandler implements NetChannel {
 		this.service = service;
 		this.channelID = channelID;
 		this.createTime = System.currentTimeMillis();
-		this.responsers = new NetResponser(service.getDefaultCallbackTimeout());
+		this.responser = new NetResponser(service);
 		// Publish created event.
 		NetEventFactory factory = service.getEventFactory();
 		BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
@@ -101,6 +102,16 @@ public abstract class NetChannelHandler implements NetChannel {
 	@Override
 	public NetChannelState getState() {
 		return state;
+	}
+
+	@Override
+	public boolean isOpened() {
+		return state == NetChannelState.OPENED;
+	}
+
+	@Override
+	public boolean isClosed() {
+		return state == NetChannelState.CLOSED;
 	}
 
 	@Override
@@ -142,7 +153,7 @@ public abstract class NetChannelHandler implements NetChannel {
 
 	@Override
 	public NetResponser getResponser() {
-		return responsers;
+		return responser;
 	}
 
 	@Override
@@ -196,7 +207,7 @@ public abstract class NetChannelHandler implements NetChannel {
 			if (publisher.publish(event).isCancelled()) return false;
 
 			// Callback response on closing.
-			responsers.callbackOnClosing();
+			responser.callbackOnClosing();
 			// Do close logic.
 			if (!doClose()) return false;
 			state = NetChannelState.CLOSED;
@@ -217,18 +228,50 @@ public abstract class NetChannelHandler implements NetChannel {
 		synchronized (stateLock) {
 			if (state == NetChannelState.CLOSED) return;
 			// Callback response on closing.
-			responsers.callbackOnClosing();
+			responser.callbackOnClosing();
 			// Do close logic.
 			try {
 				doClose();
 			} catch (Exception e) {
-				e.printStackTrace();
+				FrameworkNet.getLogger().error(e);
 			}
 			state = NetChannelState.CLOSED;
 			closeTime = System.currentTimeMillis();
 			// Remove channel from service.
 			service.removeChannel(channelID);
 		}
+	}
+
+	@Override
+	public void checkRunningStatus(long currentTime) {
+
+		// Check the responses timeout.
+		responser.checkTimeout(currentTime);
+
+		// Check reading timeout.
+		long recvIdleTimeout = service.receivingIdleTimeout;
+		boolean receivingIdleReached = (recvIdleTimeout > 0 && currentTime - messageTime > recvIdleTimeout);
+		// Check sending timeout.
+		long sendIdleTimeout = service.sendingIdleTimeout;
+		boolean sendingIdleReached = (sendIdleTimeout > 0 && currentTime - sentTime > sendIdleTimeout);
+
+		// Close this channel on timeout.
+		if (receivingIdleReached || sendingIdleReached) {
+			// Output message.
+			if (receivingIdleReached) {
+				FrameworkNet.getLogger().info(FrameworkNet.getLocale().text("net.message.recv.idle", recvIdleTimeout, channelID, messageTime, getClass().getName()));
+			}
+			if (sendingIdleReached) {
+				FrameworkNet.getLogger().info(FrameworkNet.getLocale().text("net.message.send.idle", sendIdleTimeout, channelID, sentTime, getClass().getName()));
+			}
+			// Close this channel.
+			try {
+				close();
+			} catch (Exception e) {
+				FrameworkNet.getLogger().error(e);
+			}
+		}
+
 	}
 
 	// --------------------------- Abstract methods ----------------------------

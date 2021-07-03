@@ -6,6 +6,7 @@ import java.util.Map;
 import org.iotcity.iot.framework.IoTFramework;
 import org.iotcity.iot.framework.core.bus.BusEventPublisher;
 import org.iotcity.iot.framework.net.FrameworkNet;
+import org.iotcity.iot.framework.net.channel.NetService;
 import org.iotcity.iot.framework.net.event.NetEventFactory;
 import org.iotcity.iot.framework.net.event.NetMessageErrorEvent;
 
@@ -16,10 +17,12 @@ import org.iotcity.iot.framework.net.event.NetMessageErrorEvent;
  */
 public final class NetResponser {
 
+	// ------------------------------------- Private fields ---------------------------------
+
 	/**
-	 * The global configuration timeout value.
+	 * Network channel service.
 	 */
-	private final long defaultTimeout;
+	protected final NetService service;
 	/**
 	 * The lock for responser data map.
 	 */
@@ -28,14 +31,26 @@ public final class NetResponser {
 	 * The callback data map (the key is the message queue key, the value is the responser data context).
 	 */
 	private final Map<String, NetResponserContext> map = new HashMap<>();
+	/**
+	 * Indicates whether the responser context has changed.
+	 */
+	private boolean contextChanged = false;
+	/**
+	 * The responser context array.
+	 */
+	private NetResponserContext[] contexts = new NetResponserContext[0];
+
+	// ------------------------------------- Constructor ---------------------------------
 
 	/**
 	 * Constructor for the responser to process asynchronous response callback message.
-	 * @param defaultTimeout The global configuration timeout value in milliseconds that waiting for a response data callback (the default timeout value is 120000 ms).
+	 * @param service Network channel service handler (required, not null).
 	 */
-	public NetResponser(long defaultTimeout) {
-		this.defaultTimeout = defaultTimeout <= 0 ? 120000 : defaultTimeout;
+	public NetResponser(NetService service) {
+		this.service = service;
 	}
+
+	// ------------------------------------- Public methods ---------------------------------
 
 	/**
 	 * Fix the timeout value by using the timeout value of global configure.
@@ -43,8 +58,10 @@ public final class NetResponser {
 	 * @return The timeout value in milliseconds that has been fixed.
 	 */
 	public long fixTimeout(long timeout) {
-		return timeout <= 0 ? defaultTimeout : timeout;
+		return timeout <= 0 ? service.getDefaultCallbackTimeout() : timeout;
 	}
+
+	// ------------------------------------- Callback methods ---------------------------------
 
 	/**
 	 * Add asynchronous response callback data.
@@ -62,6 +79,7 @@ public final class NetResponser {
 		synchronized (lock) {
 			NetResponserContext context = map.get(messageQueue);
 			if (context == null) {
+				contextChanged = true;
 				context = new NetResponserContext(messageQueue, object);
 				map.put(messageQueue, context);
 			} else {
@@ -90,67 +108,31 @@ public final class NetResponser {
 		int successes = 0;
 		// Traverse the objects to execute callback.
 		for (NetResponserObject object : objects) {
-			// Get the callback object.
-			NetResponseCallback<?> callback = object.callback;
-			try {
-				// Execute callback.
-				callback.callbackResponse(io, status, response);
-				successes++;
-			} catch (Exception e) {
-				// Log error message.
-				FrameworkNet.getLogger().error(FrameworkNet.getLocale().text("net.message.logic.res.err", responseClass.getName(), e.getMessage()), e);
-				// Get event factory and publisher.
-				NetEventFactory factory = io.getService().getEventFactory();
-				BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
-				// Create an error event.
-				NetMessageErrorEvent event = factory.createMessageErrorEvent(this, direction, io, object.request, response, new Exception[] {
-					e
-				}, NetMessageStatus.CALLBACK_EXCEPTION);
-				// Publish the error event.
-				publisher.publish(event);
-			}
+			// Invoke callback.
+			if (invokeCllaback(object, direction, io, responseClass, status, response)) successes++;
 		}
+		// Return the successes.
 		return successes;
 	}
 
 	/**
 	 * Check the timeout callback objects and execute the timeout callback processing.
+	 * @param currentTime Current system time.
 	 */
-	public void checkTimeout() {
-		// Get system time.
-		long time = System.currentTimeMillis();
+	public void checkTimeout(long currentTime) {
 		// Get responser data contexts.
-		NetResponserContext[] contexts;
-		synchronized (lock) {
-			contexts = map.values().toArray(new NetResponserContext[map.size()]);
-		}
+		NetResponserContext[] contexts = getContexts(false);
 		// Get the timeout status.
 		NetMessageStatus status = NetMessageStatus.RESPONSE_TIMEOUT;
 		// Traverse the contexts to get timeout objects.
 		for (NetResponserContext context : contexts) {
 			// Get timeout responser objects.
-			NetResponserObject[] objects = context.removeTimeout(time);
+			NetResponserObject[] objects = context.removeTimeout(currentTime);
 			if (objects == null) continue;
 			// Traverse the objects to execute callback.
 			for (NetResponserObject object : objects) {
-				// Get the callback object.
-				NetResponseCallback<?> callback = object.callback;
-				try {
-					// Execute callback.
-					callback.callbackResponse(object.io, status, null);
-				} catch (Exception e) {
-					// Log error message.
-					FrameworkNet.getLogger().error(FrameworkNet.getLocale().text("net.message.logic.res.err", object.responseClass.getName(), e.getMessage()), e);
-					// Get event factory and publisher.
-					NetEventFactory factory = object.io.getService().getEventFactory();
-					BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
-					// Create an error event.
-					NetMessageErrorEvent event = factory.createMessageErrorEvent(this, NetMessageDirection.TO_REMOTE_REQUEST, object.io, object.request, null, new Exception[] {
-						e
-					}, NetMessageStatus.CALLBACK_EXCEPTION);
-					// Publish the error event.
-					publisher.publish(event);
-				}
+				// Invoke callback.
+				invokeCllaback(object, NetMessageDirection.TO_REMOTE_REQUEST, object.io, object.responseClass, status, null);
 			}
 		}
 	}
@@ -160,11 +142,7 @@ public final class NetResponser {
 	 */
 	public void callbackOnClosing() {
 		// Get responser data contexts.
-		NetResponserContext[] contexts;
-		synchronized (lock) {
-			contexts = map.values().toArray(new NetResponserContext[map.size()]);
-			map.clear();
-		}
+		NetResponserContext[] contexts = getContexts(true);
 		// Get the closed status.
 		NetMessageStatus status = NetMessageStatus.CHANNEL_CLOSING;
 		// Traverse the contexts to get timeout objects.
@@ -174,27 +152,80 @@ public final class NetResponser {
 			if (objects == null) continue;
 			// Traverse the objects to execute callback.
 			for (NetResponserObject object : objects) {
-				// Get the callback object.
-				NetResponseCallback<?> callback = object.callback;
-				try {
-					// Execute callback.
-					callback.callbackResponse(object.io, status, null);
-				} catch (Exception e) {
-					// Log error message.
-					FrameworkNet.getLogger().error(FrameworkNet.getLocale().text("net.message.logic.res.err", object.responseClass.getName(), e.getMessage()), e);
-					// Get event factory and publisher.
-					NetEventFactory factory = object.io.getService().getEventFactory();
-					BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
-					// Create an error event.
-					NetMessageErrorEvent event = factory.createMessageErrorEvent(this, NetMessageDirection.TO_REMOTE_REQUEST, object.io, object.request, null, new Exception[] {
-						e
-					}, NetMessageStatus.CALLBACK_EXCEPTION);
-					// Publish the error event.
-					publisher.publish(event);
-				}
+				// Invoke callback.
+				invokeCllaback(object, NetMessageDirection.TO_REMOTE_REQUEST, object.io, object.responseClass, status, null);
 			}
 		}
 	}
+
+	// ------------------------------------- Private methods ---------------------------------
+
+	/**
+	 * Gets the responser context array.
+	 * @param reset Whether to reset all responser contexts after returning data.
+	 * @return The responser contexts.
+	 */
+	private NetResponserContext[] getContexts(boolean reset) {
+		// Get the contexts as the default returning data.
+		NetResponserContext[] returns = contexts;
+		if (contextChanged) {
+			synchronized (lock) {
+				// Rebuild the array.
+				if (contextChanged) {
+					contexts = map.values().toArray(new NetResponserContext[map.size()]);
+					returns = contexts;
+					contextChanged = false;
+				}
+				// Reset contexts.
+				if (reset) {
+					map.clear();
+					contexts = new NetResponserContext[0];
+				}
+			}
+		} else if (reset) {
+			// Reset contexts only.
+			synchronized (lock) {
+				map.clear();
+				contexts = new NetResponserContext[0];
+			}
+		}
+		return returns;
+	}
+
+	/**
+	 * Invoke the response callback.
+	 * @param object The network asynchronous responser object (required, not null).
+	 * @param direction The network message data transmission direction (required, not null).
+	 * @param io The network input and output object (required, can not be null).
+	 * @param responseClass The response data class (required, can not be null).
+	 * @param status The network message status (required, can not be null).
+	 * @param response The network response data object (optional, set it to null when the response is not required).
+	 * @return Whether the callback execution is successful.
+	 */
+	private boolean invokeCllaback(NetResponserObject object, NetMessageDirection direction, NetIO<?, ?> io, Class<?> responseClass, NetMessageStatus status, NetDataResponse response) {
+		// Get the callback object.
+		NetResponseCallback<?> callback = object.callback;
+		try {
+			// Execute callback.
+			callback.callbackResponse(io, status, response);
+			return true;
+		} catch (Exception e) {
+			// Log error message.
+			FrameworkNet.getLogger().error(FrameworkNet.getLocale().text("net.message.logic.res.err", responseClass.getName(), e.getMessage()), e);
+			// Get event factory and publisher.
+			NetEventFactory factory = io.getService().getEventFactory();
+			BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
+			// Create an error event.
+			NetMessageErrorEvent event = factory.createMessageErrorEvent(this, direction, io, object.request, response, new Exception[] {
+				e
+			}, NetMessageStatus.CALLBACK_EXCEPTION);
+			// Publish the error event.
+			publisher.publish(event);
+			return false;
+		}
+	}
+
+	// ------------------------------------- Inner classes ---------------------------------
 
 	/**
 	 * Network responser object context.
@@ -264,6 +295,7 @@ public final class NetResponser {
 				// Remove the context that haven't responser object.
 				synchronized (lock) {
 					if (array.length == 0) {
+						contextChanged = true;
 						map.remove(messageQueue);
 					}
 				}
@@ -294,6 +326,7 @@ public final class NetResponser {
 				// Remove the context that haven't responser object.
 				synchronized (lock) {
 					if (array.length == 0) {
+						contextChanged = true;
 						map.remove(messageQueue);
 					}
 				}
@@ -334,7 +367,7 @@ public final class NetResponser {
 				NetResponserObject[] remains = new NetResponserObject[len];
 				int returnPos = 0;
 				int remainPos = 0;
-				// Search response class.
+				// Filter responser object.
 				for (int i = 0; i < len; i++) {
 					NetResponserObject object = array[i];
 					if (filter.test(object)) {

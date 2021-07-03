@@ -9,6 +9,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.iotcity.iot.framework.IoTFramework;
 import org.iotcity.iot.framework.core.bus.BusEventPublisher;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
+import org.iotcity.iot.framework.core.util.task.PriorityRunnable;
+import org.iotcity.iot.framework.core.util.task.TaskHandler;
 import org.iotcity.iot.framework.net.NetManager;
 import org.iotcity.iot.framework.net.event.NetEventFactory;
 import org.iotcity.iot.framework.net.event.NetServiceEvent;
@@ -22,7 +24,30 @@ import org.iotcity.iot.framework.net.io.NetOutbound;
  */
 public abstract class NetServiceHandler implements NetService {
 
-	// --------------------------- Private fields ----------------------------
+	// --------------------------- Public static fields ----------------------------
+
+	/**
+	 * The default value for thread execution priority.
+	 */
+	public static final int CONST_MULTITHREADING_PRIORITY = 0;
+	/**
+	 * The default value for service monitoring interval in milliseconds.
+	 */
+	public static final long CONST_MONITORING_INTERVAL = 10000;
+	/**
+	 * The default value for callback timeout in milliseconds.
+	 */
+	public static final long CONST_CALLBACK_TIMEOUT = 120000;
+	/**
+	 * The default value for receiving idle timeout in milliseconds.
+	 */
+	public static final long CONST_RECEIVING_IDLE_TIMEOUT = 0;
+	/**
+	 * The default value for sending idle timeout in milliseconds.
+	 */
+	public static final long CONST_SENDING_IDLE_TIMEOUT = 0;
+
+	// --------------------------- Protected fields ----------------------------
 
 	/**
 	 * The net manager object.
@@ -33,9 +58,9 @@ public abstract class NetServiceHandler implements NetService {
 	 */
 	protected final String serviceID;
 	/**
-	 * The network service global configuration option data (not null).
+	 * Whether to use multithreading to process request and response data when allowed.
 	 */
-	protected final NetServiceOptions options;
+	protected final boolean multithreading;
 	/**
 	 * The lock object for network state updating.
 	 */
@@ -44,17 +69,49 @@ public abstract class NetServiceHandler implements NetService {
 	 * Network state of this service.
 	 */
 	protected NetServiceState state = NetServiceState.CREATED;
+
+	// --------------------------- Options fields ----------------------------
+
 	/**
-	 * The network channels thread safe map (the key is channel ID, the value is channel object).
+	 * The thread execution priority of the current network service (0 by default, the higher the value, the higher the priority, the higher value will be executed first).
 	 */
-	protected final Map<String, NetChannel> channels = new ConcurrentHashMap<>();
+	protected int multithreadingPriority = CONST_MULTITHREADING_PRIORITY;
+	/**
+	 * The service monitoring interval in milliseconds for channel status check (10000 ms by default).
+	 */
+	protected long serviceMonitoringInterval = CONST_MONITORING_INTERVAL;
+	/**
+	 * The default timeout value in milliseconds that waiting for a response data callback (120000 ms by default).
+	 */
+	protected long defaultCallbackTimeout = CONST_CALLBACK_TIMEOUT;
+	/**
+	 * If no data is received within the specified idle time in milliseconds, the channel will be closed (0 by default, when it is set to 0, this option is disabled).
+	 */
+	protected long receivingIdleTimeout = CONST_RECEIVING_IDLE_TIMEOUT;
+	/**
+	 * If no data is sent within the specified idle time in milliseconds, the channel will be closed (0 by default, when it is set to 0, this option is disabled).
+	 */
+	protected long sendingIdleTimeout = CONST_SENDING_IDLE_TIMEOUT;
 
 	// --------------------------- Private fields ----------------------------
 
 	/**
-	 * Whether to use multithreading to process request and response data when allowed.
+	 * The network channels thread safe map (the key is channel ID, the value is channel object).
 	 */
-	private final boolean multithreading;
+	private final Map<String, NetChannel> channels = new ConcurrentHashMap<>();
+	/**
+	 * The channels array in this service.
+	 */
+	private NetChannel[] channelArray = new NetChannel[0];
+	/**
+	 * Indicates whether the network channels has changed.
+	 */
+	private boolean channelChanged = false;
+	/**
+	 * The lock for channels changed.
+	 */
+	private Object channelLock = new Object();
+
 	/**
 	 * The inbounds map (the key is NetIO class, the value is inbound context object).
 	 */
@@ -63,6 +120,7 @@ public abstract class NetServiceHandler implements NetService {
 	 * The outbounds map (the key is NetIO class, the value is outbound context object).
 	 */
 	private final Map<Class<?>, NetOutboundContext> outbounds = new HashMap<>();
+
 	/**
 	 * The create time of this service in milliseconds.
 	 */
@@ -84,6 +142,29 @@ public abstract class NetServiceHandler implements NetService {
 	 */
 	private long sentTime;
 
+	// --------------------------- Service monitoring task ----------------------------
+
+	/**
+	 * The task ID for service status check.
+	 */
+	private long monitoringTaskID = 0;
+	/**
+	 * The monitoring task for service status check.
+	 */
+	private final Runnable monitoringTask = new PriorityRunnable(0) {
+
+		@Override
+		public void run() {
+			long currentTime = System.currentTimeMillis();
+			NetChannel[] channels = getChannels();
+			for (NetChannel channel : channels) {
+				// Check channel running status.
+				channel.checkRunningStatus(currentTime);
+			}
+		}
+
+	};
+
 	// --------------------------- Constructor ----------------------------
 
 	/**
@@ -91,20 +172,16 @@ public abstract class NetServiceHandler implements NetService {
 	 * @param manager The net manager object (required, can not be null).
 	 * @param serviceID The service unique identification (required, can not be or empty).
 	 * @param multithreading Whether to use multithreading to process request and response data when allowed.
-	 * @param options The network service global configuration option data (optional).
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "manager" or "serviceID" is null or empty.
 	 */
-	public NetServiceHandler(NetManager manager, String serviceID, boolean multithreading, NetServiceOptions options) throws IllegalArgumentException {
+	public NetServiceHandler(NetManager manager, String serviceID, boolean multithreading) throws IllegalArgumentException {
 		if (manager == null || StringHelper.isEmpty(serviceID)) {
 			throw new IllegalArgumentException("Parameter service or channelID can not be null or empty!");
 		}
 		this.manager = manager;
 		this.serviceID = serviceID;
 		this.multithreading = multithreading;
-		this.options = options == null ? new NetServiceOptions() : options;
 		this.createTime = System.currentTimeMillis();
-		// Add this service to manager.
-		manager.addService(this);
 		// Publish created event.
 		NetEventFactory factory = this.getEventFactory();
 		BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
@@ -112,6 +189,33 @@ public abstract class NetServiceHandler implements NetService {
 	}
 
 	// --------------------------- Override methods ----------------------------
+
+	@Override
+	public boolean config(NetServiceOptions options, boolean reset) {
+		if (options == null) return false;
+		// Set service configure.
+		multithreadingPriority = options.multithreadingPriority;
+		defaultCallbackTimeout = options.defaultCallbackTimeout > 0 ? options.defaultCallbackTimeout : CONST_CALLBACK_TIMEOUT;
+		receivingIdleTimeout = options.receivingIdleTimeout > 0 ? options.receivingIdleTimeout : CONST_RECEIVING_IDLE_TIMEOUT;
+		sendingIdleTimeout = options.sendingIdleTimeout > 0 ? options.sendingIdleTimeout : CONST_SENDING_IDLE_TIMEOUT;
+
+		// Fix the monitoring interval.
+		long interval = options.serviceMonitoringInterval > 0 ? options.serviceMonitoringInterval : CONST_MONITORING_INTERVAL;
+		// Check interval for monitoring task.
+		if (serviceMonitoringInterval != interval) {
+			serviceMonitoringInterval = interval;
+			TaskHandler handler = manager.getTaskHandler();
+			// Lock for task creation.
+			synchronized (stateLock) {
+				if (monitoringTaskID > 0) {
+					handler.remove(monitoringTaskID);
+					monitoringTaskID = handler.addIntervalTask(monitoringTask, serviceMonitoringInterval, serviceMonitoringInterval);
+				}
+			}
+		}
+
+		return true;
+	}
 
 	@Override
 	public NetManager getNetManager() {
@@ -130,17 +234,37 @@ public abstract class NetServiceHandler implements NetService {
 
 	@Override
 	public int getMultithreadingPriority() {
-		return options.multithreadingPriority;
+		return multithreadingPriority;
 	}
 
 	@Override
 	public long getDefaultCallbackTimeout() {
-		return options.defaultCallbackTimeout;
+		return defaultCallbackTimeout;
+	}
+
+	@Override
+	public long getReceivingIdleTimeout() {
+		return receivingIdleTimeout;
+	}
+
+	@Override
+	public long getSendingIdleTimeout() {
+		return sendingIdleTimeout;
 	}
 
 	@Override
 	public NetServiceState getState() {
 		return state;
+	}
+
+	@Override
+	public boolean isStarted() {
+		return state == NetServiceState.STARTED;
+	}
+
+	@Override
+	public boolean isStopped() {
+		return state == NetServiceState.STOPPED;
 	}
 
 	@Override
@@ -178,7 +302,8 @@ public abstract class NetServiceHandler implements NetService {
 	@Override
 	public NetChannel[] filterChannels(NetChannelFilter filter) {
 		List<NetChannel> list = new ArrayList<>();
-		for (NetChannel channel : channels.values()) {
+		NetChannel[] channels = getChannels();
+		for (NetChannel channel : channels) {
 			if (filter.test(channel)) list.add(channel);
 		}
 		return list.toArray(new NetChannel[list.size()]);
@@ -186,7 +311,15 @@ public abstract class NetServiceHandler implements NetService {
 
 	@Override
 	public NetChannel[] getChannels() {
-		return channels.values().toArray(new NetChannel[channels.size()]);
+		if (channelChanged) {
+			synchronized (channelLock) {
+				if (channelChanged) {
+					channelArray = channels.values().toArray(new NetChannel[channels.size()]);
+					channelChanged = false;
+				}
+			}
+		}
+		return channelArray;
 	}
 
 	@Override
@@ -273,6 +406,11 @@ public abstract class NetServiceHandler implements NetService {
 			state = NetServiceState.STARTED;
 			startTime = System.currentTimeMillis();
 
+			// Add a monitoring task.
+			TaskHandler handler = manager.getTaskHandler();
+			if (monitoringTaskID > 0) handler.remove(monitoringTaskID);
+			monitoringTaskID = handler.addIntervalTask(monitoringTask, serviceMonitoringInterval, serviceMonitoringInterval);
+
 			// Publish started event.
 			publisher.publish(factory.createServiceEvent(this, this, NetServiceState.STARTED));
 		}
@@ -300,9 +438,16 @@ public abstract class NetServiceHandler implements NetService {
 			}
 			// Do stop logic.
 			if (!doStop()) return false;
-			channels.clear();
 			state = NetServiceState.STOPPED;
 			stopTime = System.currentTimeMillis();
+			channels.clear();
+			channelArray = new NetChannel[0];
+
+			// Remove the monitoring task.
+			if (monitoringTaskID > 0) {
+				manager.getTaskHandler().remove(monitoringTaskID);
+				monitoringTaskID = 0;
+			}
 
 			// Publish stopped event.
 			publisher.publish(factory.createServiceEvent(this, this, NetServiceState.STOPPED));
@@ -318,7 +463,11 @@ public abstract class NetServiceHandler implements NetService {
 	 * @param channel The network channel object.
 	 */
 	void addChannel(NetChannel channel) {
+		if (state != NetServiceState.STARTED) return;
 		channels.put(channel.getChannelID(), channel);
+		synchronized (channelLock) {
+			if (!channelChanged) channelChanged = true;
+		}
 	}
 
 	/**
@@ -327,6 +476,9 @@ public abstract class NetServiceHandler implements NetService {
 	 */
 	void removeChannel(String channelID) {
 		channels.remove(channelID);
+		synchronized (channelLock) {
+			if (!channelChanged) channelChanged = true;
+		}
 	}
 
 	/**

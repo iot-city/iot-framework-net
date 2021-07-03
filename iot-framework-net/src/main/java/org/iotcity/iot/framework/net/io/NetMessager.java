@@ -26,6 +26,18 @@ public final class NetMessager {
 	public NetMessageStatus onMessage(NetIO<?, ?> io) throws IllegalArgumentException {
 		if (io == null) throw new IllegalArgumentException("Parameter io can not be null!");
 
+		// Check channel and service state.
+		if (io.getChannel().isClosed() || io.getService().isStopped()) {
+			// Close the channel.
+			try {
+				io.getChannel().close();
+			} catch (Exception e) {
+				FrameworkNet.getLogger().error(e);
+			}
+			// Return the close state.
+			return NetMessageStatus.CHANNEL_CLOSED;
+		}
+
 		// Get inbounds.
 		NetInboundObject[] inbounds = io.getInbounds();
 		// Check inbounds.

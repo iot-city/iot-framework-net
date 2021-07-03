@@ -1,5 +1,6 @@
 package org.iotcity.iot.framework.net.channel;
 
+import org.iotcity.iot.framework.core.config.Configurable;
 import org.iotcity.iot.framework.net.NetManager;
 import org.iotcity.iot.framework.net.event.NetEventFactory;
 import org.iotcity.iot.framework.net.io.NetInbound;
@@ -10,7 +11,7 @@ import org.iotcity.iot.framework.net.io.NetOutbound;
  * @author ardon
  * @date 2021-06-19
  */
-public interface NetService {
+public interface NetService extends Configurable<NetServiceOptions> {
 
 	/**
 	 * Gets the network manager (returns not null).
@@ -28,19 +29,39 @@ public interface NetService {
 	boolean isMultithreading();
 
 	/**
-	 * Gets the thread priority of the current network service (0 by default, the higher the value, the higher the priority, the higher value will be executed first).
+	 * Gets the thread execution priority of the current network service (0 by default, the higher the value, the higher the priority, the higher value will be executed first).
 	 */
 	int getMultithreadingPriority();
 
 	/**
-	 * Gets the global configuration timeout value in milliseconds that waiting for a response data callback (the default timeout value is 120000 ms).
+	 * Gets the default timeout value in milliseconds that waiting for a response data callback (the default timeout value is 120000 ms).
 	 */
 	long getDefaultCallbackTimeout();
+
+	/**
+	 * Gets the receiving idle timeout, if no data is received within the specified idle time in milliseconds, the channel will be closed (0 by default, when it is set to 0, this option is disabled).
+	 */
+	long getReceivingIdleTimeout();
+
+	/**
+	 * Gets the sending idle timeout, if no data is sent within the specified idle time in milliseconds, the channel will be closed (0 by default, when it is set to 0, this option is disabled).
+	 */
+	long getSendingIdleTimeout();
 
 	/**
 	 * Gets the current state of this service.
 	 */
 	NetServiceState getState();
+
+	/**
+	 * Indicates whether this service has been started.
+	 */
+	boolean isStarted();
+
+	/**
+	 * Indicates whether this service has been stopped.
+	 */
+	boolean isStopped();
 
 	/**
 	 * Gets the create time of this service in milliseconds.

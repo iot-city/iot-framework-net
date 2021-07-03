@@ -24,6 +24,7 @@ import org.iotcity.iot.framework.net.io.NetResponseResult;
 import org.iotcity.iot.framework.net.io.NetResponseResultGroup;
 
 /**
+ * The network manager is used to manage multiple network services and provide network data receiving and sending functions.
  * @author ardon
  * @date 2021-05-16
  */
@@ -55,7 +56,8 @@ public final class NetManager {
 	// ------------------------------------- Constructor -------------------------------------
 
 	/**
-	 * Constructor for
+	 * Constructor for network manager instance.
+	 * @param taskHandler The task handler object supporting thread pool to execute tasks and timer tasks.
 	 */
 	public NetManager(TaskHandler taskHandler) {
 		this.taskHandler = taskHandler;
@@ -65,7 +67,7 @@ public final class NetManager {
 	// ------------------------------------- Public methods -------------------------------------
 
 	/**
-	 * Gets a task handler to execute asynchronous message tasks and callback tasks (returns not null).
+	 * Gets the task handler in this network manager (returns not null).
 	 * @return Task handler object.
 	 */
 	public TaskHandler getTaskHandler() {
@@ -75,9 +77,8 @@ public final class NetManager {
 	// ------------------------------------- Service methods -------------------------------------
 
 	/**
-	 * Add a network service to the manager. <br/>
-	 * When a new network service instance is created, it will be automatically added to the manager. <br/>
-	 * If a network service with the same ID already exists in the manager or the manager object is different from service manager object, the false value will be returned.
+	 * Add a network service to this manager. <br/>
+	 * If the network service with the same service ID already exists in the manager or the manager object is different from service manager object, the false value will be returned.
 	 * @param service The network service object (required, can not be null).
 	 * @return Returns whether the addition was successful.
 	 */
