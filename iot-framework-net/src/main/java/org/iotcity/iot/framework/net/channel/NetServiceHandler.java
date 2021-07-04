@@ -483,17 +483,19 @@ public abstract class NetServiceHandler implements NetService {
 
 	/**
 	 * Update the time to the system time in milliseconds that this service receives a message.
+	 * @param channel The network channel object.
 	 * @param time The current system time.
 	 */
-	void updateMessageTime(long time) {
+	void updateMessageTime(NetChannel channel, long time) {
 		messageTime = time;
 	}
 
 	/**
 	 * Update the time to the system time in milliseconds that this service sent a message.
+	 * @param channel The network channel object.
 	 * @param time The current system time.
 	 */
-	void updateSentTime(long time) {
+	void updateSentTime(NetChannel channel, long time) {
 		sentTime = time;
 	}
 

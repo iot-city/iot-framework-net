@@ -142,13 +142,13 @@ public abstract class NetChannelHandler implements NetChannel {
 	@Override
 	public void updateMessageTime() {
 		messageTime = System.currentTimeMillis();
-		service.updateMessageTime(messageTime);
+		service.updateMessageTime(this, messageTime);
 	}
 
 	@Override
 	public void updateSentTime() {
 		sentTime = System.currentTimeMillis();
-		service.updateSentTime(sentTime);
+		service.updateSentTime(this, sentTime);
 	}
 
 	@Override

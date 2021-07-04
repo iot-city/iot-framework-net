@@ -31,21 +31,21 @@ public class NetMessageEvent extends BusEvent {
 	 */
 	private final NetMessageEventCallback callback;
 	/**
-	 * Indicates whether sending response processing was executed.
+	 * Indicates whether the send response method has been executed.
 	 */
-	private boolean calledSending = false;
+	private boolean sentResponse = false;
 	/**
-	 * The business response data object.
+	 * The sending status of the response data.
 	 */
-	private NetDataResponse businessResponse;
+	private NetMessageStatus sentStatus;
 	/**
 	 * The business logic processing status of the message.
 	 */
 	private NetMessageStatus businessStatus;
 	/**
-	 * The sending status of the response data.
+	 * The business response data object.
 	 */
-	private NetMessageStatus sentStatus;
+	private NetDataResponse businessResponse;
 
 	/**
 	 * Constructor for network message request event.
@@ -76,10 +76,17 @@ public class NetMessageEvent extends BusEvent {
 	}
 
 	/**
-	 * Indicates whether sending response processing was executed.
+	 * Indicates whether the send response method has been executed.
 	 */
-	public boolean hasCalledSending() {
-		return calledSending;
+	public boolean isSentResponse() {
+		return sentResponse;
+	}
+
+	/**
+	 * Gets the sending status of the response data (returns null if the response sending is not executed).
+	 */
+	public NetMessageStatus getSentStatus() {
+		return sentStatus;
 	}
 
 	/**
@@ -97,13 +104,6 @@ public class NetMessageEvent extends BusEvent {
 	}
 
 	/**
-	 * Gets the sending status of the response data (returns null if the response sending is not executed).
-	 */
-	public NetMessageStatus getSentStatus() {
-		return sentStatus;
-	}
-
-	/**
 	 * Send a response message to the remote end.
 	 * @param status The business logic processing status of the response (required, can not be null).
 	 * @param response The response data object (set to null when there is no callback data).
@@ -112,10 +112,10 @@ public class NetMessageEvent extends BusEvent {
 	 */
 	public NetMessageStatus sendResponse(NetMessageStatus status, NetDataResponse response) throws IllegalArgumentException {
 		if (status == null) throw new IllegalArgumentException("Parameter status can not be null!");
-		if (calledSending) return NetMessageStatus.DUPLICATED;
+		if (sentResponse) return NetMessageStatus.DUPLICATED;
 		synchronized (lock) {
-			if (calledSending) return NetMessageStatus.DUPLICATED;
-			calledSending = true;
+			if (sentResponse) return NetMessageStatus.DUPLICATED;
+			sentResponse = true;
 			businessStatus = status;
 			businessResponse = response;
 			// Callback response to send the message.

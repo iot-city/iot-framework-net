@@ -159,7 +159,7 @@ public final class NetMessager {
 			if (io.isAsynchronous()) {
 
 				// Check callback execution in asynchronous mode.
-				if (event.hasCalledSending()) {
+				if (event.isSentResponse()) {
 					// Return the sent status.
 					return event.getSentStatus();
 				} else {
@@ -170,7 +170,7 @@ public final class NetMessager {
 			} else {
 
 				// Check callback execution in synchronous mode.
-				if (event.hasCalledSending()) {
+				if (event.isSentResponse()) {
 					// Return the callback status.
 					return event.getSentStatus();
 				} else {
