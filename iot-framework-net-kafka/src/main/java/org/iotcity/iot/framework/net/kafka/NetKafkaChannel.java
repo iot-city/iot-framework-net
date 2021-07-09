@@ -1,6 +1,7 @@
 package org.iotcity.iot.framework.net.kafka;
 
 import org.iotcity.iot.framework.net.channel.NetChannelHandler;
+import org.iotcity.iot.framework.net.channel.NetChannelOptions;
 import org.iotcity.iot.framework.net.channel.NetServiceHandler;
 import org.iotcity.iot.framework.net.io.NetIO;
 
@@ -10,13 +11,8 @@ import org.iotcity.iot.framework.net.io.NetIO;
  */
 public class NetKafkaChannel<K, V> extends NetChannelHandler {
 
-	/**
-	 * Constructor for
-	 * @param service
-	 * @param channelID
-	 */
-	public NetKafkaChannel(NetServiceHandler service, String channelID) {
-		super(service, channelID);
+	public NetKafkaChannel(NetServiceHandler service, String channelID, NetChannelOptions options) throws IllegalArgumentException {
+		super(service, channelID, options);
 	}
 
 	@Override

@@ -67,17 +67,19 @@ public class NetIOHandler<READER, SENDER> implements NetIO<READER, SENDER> {
 
 	@Override
 	public boolean isMultithreading() {
-		return service.isMultithreading();
+		return channel.isMultithreading();
 	}
 
 	@Override
 	public NetInboundObject[] getInbounds() {
-		return service.getInbounds(getClass());
+		NetInboundObject[] inbounds = channel.getInbounds(getClass());
+		return inbounds == null ? service.getInbounds(getClass()) : inbounds;
 	}
 
 	@Override
 	public NetOutboundObject[] getOutbounds() {
-		return service.getOutbounds(getClass());
+		NetOutboundObject[] outbounds = channel.getOutbounds(getClass());
+		return outbounds == null ? service.getOutbounds(getClass()) : outbounds;
 	}
 
 	@Override

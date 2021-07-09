@@ -3,6 +3,7 @@ package org.iotcity.iot.framework.net.io;
 import org.iotcity.iot.framework.IoTFramework;
 import org.iotcity.iot.framework.core.bus.BusEventPublisher;
 import org.iotcity.iot.framework.net.FrameworkNet;
+import org.iotcity.iot.framework.net.channel.NetChannel;
 import org.iotcity.iot.framework.net.channel.NetInboundObject;
 import org.iotcity.iot.framework.net.channel.NetOutboundObject;
 import org.iotcity.iot.framework.net.event.NetEventFactory;
@@ -32,11 +33,13 @@ public final class NetRequester {
 	public <REQ extends NetDataRequest, RES extends NetDataResponse> NetMessageStatus asyncRequest(NetIO<?, ?> io, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
 		if (io == null || request == null || responseClass == null) throw new IllegalArgumentException("Parameter io, request and responseClass can not be null!");
 
+		// Gets the channel of I/O object.
+		NetChannel channel = io.getChannel();
 		// Check channel and service state.
-		if (io.getChannel().isClosed() || io.getService().isStopped()) {
+		if (channel.isClosed() || io.getService().isStopped()) {
 			// Close the channel.
 			try {
-				io.getChannel().close();
+				channel.close();
 				if (callback != null) {
 					callback.callbackResult(new NetResponseResult<RES>(io, NetMessageStatus.CHANNEL_CLOSED, null));
 				}
@@ -50,7 +53,7 @@ public final class NetRequester {
 		// Get request data class.
 		Class<?> requestClass = request.getClass();
 		// Fix timeout value.
-		timeout = io.getResponser().fixTimeout(timeout);
+		timeout = channel.fixCallbackTimeout(timeout);
 
 		// Get outbounds.
 		NetOutboundObject[] outbounds = io.getOutbounds();
@@ -324,11 +327,13 @@ public final class NetRequester {
 	public <REQ extends NetDataRequest, RES extends NetDataResponse> NetResponseResult<RES> syncRequest(NetIO<?, ?> io, REQ request, Class<RES> responseClass, long timeout) throws IllegalArgumentException {
 		if (io == null || request == null || responseClass == null) throw new IllegalArgumentException("Parameter io, request and responseClass can not be null!");
 
+		// Gets the channel of I/O object.
+		NetChannel channel = io.getChannel();
 		// Check channel and service state.
-		if (io.getChannel().isClosed() || io.getService().isStopped()) {
+		if (channel.isClosed() || io.getService().isStopped()) {
 			// Close the channel.
 			try {
-				io.getChannel().close();
+				channel.close();
 			} catch (Exception e) {
 				FrameworkNet.getLogger().error(e);
 			}
@@ -339,7 +344,7 @@ public final class NetRequester {
 		// Get request data class.
 		Class<?> requestClass = request.getClass();
 		// Fix timeout value.
-		timeout = io.getResponser().fixTimeout(timeout);
+		timeout = channel.fixCallbackTimeout(timeout);
 
 		// Get outbounds.
 		NetOutboundObject[] outbounds = io.getOutbounds();

@@ -27,25 +27,9 @@ public abstract class NetServiceHandler implements NetService {
 	// --------------------------- Public static fields ----------------------------
 
 	/**
-	 * The default value for thread execution priority.
-	 */
-	public static final int CONST_MULTITHREADING_PRIORITY = 0;
-	/**
 	 * The default value for service monitoring interval in milliseconds.
 	 */
 	public static final long CONST_MONITORING_INTERVAL = 10000;
-	/**
-	 * The default value for callback timeout in milliseconds.
-	 */
-	public static final long CONST_CALLBACK_TIMEOUT = 120000;
-	/**
-	 * The default value for receiving idle timeout in milliseconds.
-	 */
-	public static final long CONST_RECEIVING_IDLE_TIMEOUT = 0;
-	/**
-	 * The default value for sending idle timeout in milliseconds.
-	 */
-	public static final long CONST_SENDING_IDLE_TIMEOUT = 0;
 
 	// --------------------------- Protected fields ----------------------------
 
@@ -58,10 +42,6 @@ public abstract class NetServiceHandler implements NetService {
 	 */
 	protected final String serviceID;
 	/**
-	 * Whether to use multithreading to process request and response data when allowed.
-	 */
-	protected final boolean multithreading;
-	/**
 	 * The lock object for network state updating.
 	 */
 	protected final Object stateLock = new Object();
@@ -73,25 +53,9 @@ public abstract class NetServiceHandler implements NetService {
 	// --------------------------- Options fields ----------------------------
 
 	/**
-	 * The thread execution priority of the current network service (0 by default, the higher the value, the higher the priority, the higher value will be executed first).
-	 */
-	protected int multithreadingPriority = CONST_MULTITHREADING_PRIORITY;
-	/**
 	 * The service monitoring interval in milliseconds for channel status check (10000 ms by default).
 	 */
-	protected long serviceMonitoringInterval = CONST_MONITORING_INTERVAL;
-	/**
-	 * The default timeout value in milliseconds that waiting for a response data callback (120000 ms by default).
-	 */
-	protected long defaultCallbackTimeout = CONST_CALLBACK_TIMEOUT;
-	/**
-	 * If no data is received within the specified idle time in milliseconds, the channel will be closed (0 by default, when it is set to 0, this option is disabled).
-	 */
-	protected long receivingIdleTimeout = CONST_RECEIVING_IDLE_TIMEOUT;
-	/**
-	 * If no data is sent within the specified idle time in milliseconds, the channel will be closed (0 by default, when it is set to 0, this option is disabled).
-	 */
-	protected long sendingIdleTimeout = CONST_SENDING_IDLE_TIMEOUT;
+	protected long monitoringInterval = CONST_MONITORING_INTERVAL;
 
 	// --------------------------- Private fields ----------------------------
 
@@ -171,17 +135,18 @@ public abstract class NetServiceHandler implements NetService {
 	 * Constructor for network service handler.
 	 * @param manager The net manager object (required, can not be null).
 	 * @param serviceID The service unique identification (required, can not be or empty).
-	 * @param multithreading Whether to use multithreading to process request and response data when allowed.
+	 * @param options The network service configuration options data (optional, set it to null if use the default options data).
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "manager" or "serviceID" is null or empty.
 	 */
-	public NetServiceHandler(NetManager manager, String serviceID, boolean multithreading) throws IllegalArgumentException {
+	public NetServiceHandler(NetManager manager, String serviceID, NetServiceOptions options) throws IllegalArgumentException {
 		if (manager == null || StringHelper.isEmpty(serviceID)) {
 			throw new IllegalArgumentException("Parameter service or channelID can not be null or empty!");
 		}
 		this.manager = manager;
 		this.serviceID = serviceID;
-		this.multithreading = multithreading;
 		this.createTime = System.currentTimeMillis();
+		// Set options.
+		config(options, false);
 		// Publish created event.
 		NetEventFactory factory = this.getEventFactory();
 		BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
@@ -193,27 +158,20 @@ public abstract class NetServiceHandler implements NetService {
 	@Override
 	public boolean config(NetServiceOptions options, boolean reset) {
 		if (options == null) return false;
-		// Set service configure.
-		multithreadingPriority = options.multithreadingPriority;
-		defaultCallbackTimeout = options.defaultCallbackTimeout > 0 ? options.defaultCallbackTimeout : CONST_CALLBACK_TIMEOUT;
-		receivingIdleTimeout = options.receivingIdleTimeout > 0 ? options.receivingIdleTimeout : CONST_RECEIVING_IDLE_TIMEOUT;
-		sendingIdleTimeout = options.sendingIdleTimeout > 0 ? options.sendingIdleTimeout : CONST_SENDING_IDLE_TIMEOUT;
-
 		// Fix the monitoring interval.
-		long interval = options.serviceMonitoringInterval > 0 ? options.serviceMonitoringInterval : CONST_MONITORING_INTERVAL;
+		long interval = options.monitoringInterval > 0 ? options.monitoringInterval : CONST_MONITORING_INTERVAL;
 		// Check interval for monitoring task.
-		if (serviceMonitoringInterval != interval) {
-			serviceMonitoringInterval = interval;
+		if (monitoringInterval != interval) {
+			monitoringInterval = interval;
 			TaskHandler handler = manager.getTaskHandler();
 			// Lock for task creation.
 			synchronized (stateLock) {
 				if (monitoringTaskID > 0) {
 					handler.remove(monitoringTaskID);
-					monitoringTaskID = handler.addIntervalTask(monitoringTask, serviceMonitoringInterval, serviceMonitoringInterval);
+					monitoringTaskID = handler.addIntervalTask(monitoringTask, interval, interval);
 				}
 			}
 		}
-
 		return true;
 	}
 
@@ -228,28 +186,8 @@ public abstract class NetServiceHandler implements NetService {
 	}
 
 	@Override
-	public boolean isMultithreading() {
-		return multithreading;
-	}
-
-	@Override
-	public int getMultithreadingPriority() {
-		return multithreadingPriority;
-	}
-
-	@Override
-	public long getDefaultCallbackTimeout() {
-		return defaultCallbackTimeout;
-	}
-
-	@Override
-	public long getReceivingIdleTimeout() {
-		return receivingIdleTimeout;
-	}
-
-	@Override
-	public long getSendingIdleTimeout() {
-		return sendingIdleTimeout;
+	public long getMonitoringInterval() {
+		return monitoringInterval;
 	}
 
 	@Override
@@ -409,7 +347,7 @@ public abstract class NetServiceHandler implements NetService {
 			// Add a monitoring task.
 			TaskHandler handler = manager.getTaskHandler();
 			if (monitoringTaskID > 0) handler.remove(monitoringTaskID);
-			monitoringTaskID = handler.addIntervalTask(monitoringTask, serviceMonitoringInterval, serviceMonitoringInterval);
+			monitoringTaskID = handler.addIntervalTask(monitoringTask, monitoringInterval, monitoringInterval);
 
 			// Publish started event.
 			publisher.publish(factory.createServiceEvent(this, this, NetServiceState.STARTED));

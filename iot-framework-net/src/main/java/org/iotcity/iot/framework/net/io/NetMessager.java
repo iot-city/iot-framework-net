@@ -15,7 +15,7 @@ import org.iotcity.iot.framework.net.event.NetMessageEventCallback;
  * @author ardon
  * @date 2021-06-21
  */
-public final class NetMessager {
+public final class NetMessager implements NetMessageEventCallback {
 
 	/**
 	 * Use the network I/O object to read and process inbound data (returns not null).
@@ -114,6 +114,15 @@ public final class NetMessager {
 
 	}
 
+	@Override
+	public NetMessageStatus onCallback(NetMessageEvent event, NetMessageStatus status, NetDataResponse response) {
+		if (response == null) {
+			return status;
+		} else {
+			return sendResponse(event.getNetIO(), event.getEventData(), response);
+		}
+	}
+
 	/**
 	 * Handle request data from the remote end (returns not null)
 	 * @param io The network input and output object.
@@ -127,16 +136,7 @@ public final class NetMessager {
 		BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
 
 		// Create a message event.
-		NetMessageEvent event = factory.createMessageEvent(this, io, request, new NetMessageEventCallback() {
-
-			@Override
-			public NetMessageStatus onCallback(NetMessageEvent event, NetMessageStatus status, NetDataResponse response) {
-				// Send response to remote end.
-				return sendResponse(io, request, response);
-			}
-
-		});
-
+		NetMessageEvent event = factory.createMessageEvent(this, io, request, this);
 		// Publish message event.
 		publisher.publish(event);
 		// Gets the event response data (it is null if the callback is not executed).
@@ -205,8 +205,6 @@ public final class NetMessager {
 	 * @return The message process status.
 	 */
 	private NetMessageStatus sendResponse(NetIO<?, ?> io, NetData request, NetDataResponse response) {
-		// Check for response null value.
-		if (response == null) return NetMessageStatus.OK;
 		// Get response data class.
 		Class<?> responseClass = response.getClass();
 

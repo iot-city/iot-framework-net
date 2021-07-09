@@ -1,6 +1,9 @@
 package org.iotcity.iot.framework.net.channel;
 
+import org.iotcity.iot.framework.core.config.Configurable;
 import org.iotcity.iot.framework.net.io.NetIO;
+import org.iotcity.iot.framework.net.io.NetInbound;
+import org.iotcity.iot.framework.net.io.NetOutbound;
 import org.iotcity.iot.framework.net.io.NetResponser;
 
 /**
@@ -8,7 +11,7 @@ import org.iotcity.iot.framework.net.io.NetResponser;
  * @author ardon
  * @date 2021-06-16
  */
-public interface NetChannel {
+public interface NetChannel extends Configurable<NetChannelOptions> {
 
 	/**
 	 * Gets the service object of this channel (returns not null).
@@ -19,6 +22,31 @@ public interface NetChannel {
 	 * Gets the channel unique identification (returns not null).
 	 */
 	String getChannelID();
+
+	/**
+	 * Indicates whether to use multithreading to process request and response data when allowed.
+	 */
+	boolean isMultithreading();
+
+	/**
+	 * Gets the thread execution priority of this channel (0 by default, the higher the value, the higher the priority, the higher value will be executed first).
+	 */
+	int getMultithreadingPriority();
+
+	/**
+	 * Gets the default timeout value in milliseconds that waiting for a response data callback (the default timeout value is 120000 ms).
+	 */
+	long getDefaultCallbackTimeout();
+
+	/**
+	 * Gets the receiving idle timeout, if no data is received within the specified idle time in milliseconds, the channel will be closed (0 by default, when it is set to 0, this option is disabled).
+	 */
+	long getReceivingIdleTimeout();
+
+	/**
+	 * Gets the sending idle timeout, if no data is sent within the specified idle time in milliseconds, the channel will be closed (0 by default, when it is set to 0, this option is disabled).
+	 */
+	long getSendingIdleTimeout();
 
 	/**
 	 * Gets the current state of this channel.
@@ -76,6 +104,13 @@ public interface NetChannel {
 	NetResponser getResponser();
 
 	/**
+	 * Fix the response callback timeout value by using the default callback timeout value of this channel.
+	 * @param timeout The timeout value in milliseconds that waiting for a response data callback.
+	 * @return The timeout value in milliseconds that has been fixed.
+	 */
+	long fixCallbackTimeout(long timeout);
+
+	/**
 	 * Store a data object to this channel.
 	 * @param data Data object that need to be stored in this channel.
 	 */
@@ -87,6 +122,46 @@ public interface NetChannel {
 	 * @return The data object that has been stored.
 	 */
 	<T> T getStoreData();
+
+	/**
+	 * Add inbound message processing object to this channel.
+	 * @param inbound Network inbound message processing object.
+	 * @param priority Inbound message processing priority (the priority with the highest value is called first, 0 by default).
+	 */
+	void addInbound(NetInbound<?, ?> inbound, int priority);
+
+	/**
+	 * Remove inbound message processing object from this channel.
+	 * @param inbound Network inbound message processing object.
+	 */
+	void removeInbound(NetInbound<?, ?> inbound);
+
+	/**
+	 * Gets inbound message processing objects from this channel (returns null if there is no inbound for current I/O object).
+	 * @param netIOClass The network I/O object class (extended from: {@link org.iotcity.iot.framework.net.io.NetIO }).
+	 * @return Inbound message processing objects.
+	 */
+	NetInboundObject[] getInbounds(Class<?> netIOClass);
+
+	/**
+	 * Add outbound message processing object to this channel.
+	 * @param outbound Network outbound message processing object.
+	 * @param priority Outbound message processing priority (the priority with the highest value is called first, 0 by default).
+	 */
+	void addOutbound(NetOutbound<?, ?> outbound, int priority);
+
+	/**
+	 * Remove outbound message processing object from this channel.
+	 * @param outbound Network outbound message processing object.
+	 */
+	void removeOutbound(NetOutbound<?, ?> outbound);
+
+	/**
+	 * Gets outbound message processing objects from this channel (returns null if there is no outbound for current I/O object).
+	 * @param netIOClass The network I/O object class (extended from: {@link org.iotcity.iot.framework.net.io.NetIO }).
+	 * @return Outbound message processing objects.
+	 */
+	NetOutboundObject[] getOutbounds(Class<?> netIOClass);
 
 	/**
 	 * Open this channel, after successful opening, this channel will be automatically added to the service.

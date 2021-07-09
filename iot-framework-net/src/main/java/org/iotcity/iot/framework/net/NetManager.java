@@ -154,7 +154,7 @@ public final class NetManager {
 		if (io.isAsynchronous() && io.isMultithreading()) {
 
 			// Run multithreading task.
-			boolean submitted = taskHandler.run(new PriorityRunnable(io.getService().getMultithreadingPriority()) {
+			boolean submitted = taskHandler.run(new PriorityRunnable(io.getChannel().getMultithreadingPriority()) {
 
 				@Override
 				public void run() {
@@ -251,12 +251,15 @@ public final class NetManager {
 
 		// Get channel objects.
 		NetChannel[] channels = selector.getChannels();
-		if (channels == null || channels.length == 0) return 0;
+		// Get data length.
+		int length = channels == null ? 0 : channels.length;
+		// Check length.
+		if (length == 0) return 0;
 		// Fix threads number.
 		if (threads > maximumThreadSize) threads = maximumThreadSize;
 
 		// Check threads.
-		if (threads <= 1) {
+		if (threads < 2 || length < 2) {
 
 			// Define the number of successes.
 			int successes = 0;
@@ -271,13 +274,13 @@ public final class NetManager {
 		} else {
 
 			// Get group timeout value.
-			long groupTimeout = channels[0].getResponser().fixTimeout(timeout) * channels.length;
+			long groupTimeout = channels[0].fixCallbackTimeout(timeout) * length;
 			// Create channel group data context.
 			TaskGroupDataContext<NetChannel> context = new TaskGroupDataContext<NetChannel>(channels) {
 
 				@Override
 				public int getPriority(int index, NetChannel channel) {
-					return channel == null ? 0 : channel.getService().getMultithreadingPriority();
+					return channel == null ? 0 : channel.getMultithreadingPriority();
 				}
 
 				@Override
@@ -354,7 +357,7 @@ public final class NetManager {
 
 		// Get channel objects.
 		NetChannel[] channels = selector.getChannels();
-		// Get data length
+		// Get data length.
 		int length = channels == null ? 0 : channels.length;
 		// Create the result array.
 		@SuppressWarnings("unchecked")
@@ -365,7 +368,7 @@ public final class NetManager {
 		if (threads > maximumThreadSize) threads = maximumThreadSize;
 
 		// Check threads.
-		if (threads <= 1) {
+		if (threads < 2 || length < 2) {
 
 			// Define the number of successes.
 			int successes = 0;
@@ -386,13 +389,13 @@ public final class NetManager {
 		} else {
 
 			// Get group timeout value.
-			long groupTimeout = channels[0].getResponser().fixTimeout(timeout) * length;
+			long groupTimeout = channels[0].fixCallbackTimeout(timeout) * length;
 			// Create channel group data context.
 			TaskGroupDataContext<NetChannel> context = new TaskGroupDataContext<NetChannel>(channels) {
 
 				@Override
 				public int getPriority(int index, NetChannel channel) {
-					return channel == null ? 0 : channel.getService().getMultithreadingPriority();
+					return channel == null ? 0 : channel.getMultithreadingPriority();
 				}
 
 				@Override

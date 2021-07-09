@@ -6,7 +6,6 @@ import java.util.Map;
 import org.iotcity.iot.framework.IoTFramework;
 import org.iotcity.iot.framework.core.bus.BusEventPublisher;
 import org.iotcity.iot.framework.net.FrameworkNet;
-import org.iotcity.iot.framework.net.channel.NetService;
 import org.iotcity.iot.framework.net.event.NetEventFactory;
 import org.iotcity.iot.framework.net.event.NetMessageErrorEvent;
 
@@ -19,10 +18,6 @@ public final class NetResponser {
 
 	// ------------------------------------- Private fields ---------------------------------
 
-	/**
-	 * Network channel service.
-	 */
-	protected final NetService service;
 	/**
 	 * The lock for responser data map.
 	 */
@@ -39,27 +34,6 @@ public final class NetResponser {
 	 * The responser context array.
 	 */
 	private NetResponserContext[] contexts = new NetResponserContext[0];
-
-	// ------------------------------------- Constructor ---------------------------------
-
-	/**
-	 * Constructor for the responser to process asynchronous response callback message.
-	 * @param service Network channel service handler (required, not null).
-	 */
-	public NetResponser(NetService service) {
-		this.service = service;
-	}
-
-	// ------------------------------------- Public methods ---------------------------------
-
-	/**
-	 * Fix the timeout value by using the timeout value of global configure.
-	 * @param timeout The timeout value in milliseconds that waiting for a response data callback (optional, the global configuration timeout is used when the parameter value is less than or equal to 0).
-	 * @return The timeout value in milliseconds that has been fixed.
-	 */
-	public long fixTimeout(long timeout) {
-		return timeout <= 0 ? service.getDefaultCallbackTimeout() : timeout;
-	}
 
 	// ------------------------------------- Callback methods ---------------------------------
 

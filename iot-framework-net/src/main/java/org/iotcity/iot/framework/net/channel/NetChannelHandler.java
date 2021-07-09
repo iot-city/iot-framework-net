@@ -1,11 +1,16 @@
 package org.iotcity.iot.framework.net.channel;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.iotcity.iot.framework.IoTFramework;
 import org.iotcity.iot.framework.core.bus.BusEventPublisher;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
 import org.iotcity.iot.framework.net.FrameworkNet;
 import org.iotcity.iot.framework.net.event.NetChannelEvent;
 import org.iotcity.iot.framework.net.event.NetEventFactory;
+import org.iotcity.iot.framework.net.io.NetInbound;
+import org.iotcity.iot.framework.net.io.NetOutbound;
 import org.iotcity.iot.framework.net.io.NetResponser;
 
 /**
@@ -14,6 +19,29 @@ import org.iotcity.iot.framework.net.io.NetResponser;
  * @date 2021-06-16
  */
 public abstract class NetChannelHandler implements NetChannel {
+
+	// --------------------------- Public static fields ----------------------------
+
+	/**
+	 * The default value for multithreading options.
+	 */
+	public static final boolean CONST_MULTITHREADING = false;
+	/**
+	 * The default value for thread execution priority.
+	 */
+	public static final int CONST_MULTITHREADING_PRIORITY = 0;
+	/**
+	 * The default value for callback timeout in milliseconds.
+	 */
+	public static final long CONST_CALLBACK_TIMEOUT = 120000;
+	/**
+	 * The default value for receiving idle timeout in milliseconds.
+	 */
+	public static final long CONST_RECEIVING_IDLE_TIMEOUT = 0;
+	/**
+	 * The default value for sending idle timeout in milliseconds.
+	 */
+	public static final long CONST_SENDING_IDLE_TIMEOUT = 0;
 
 	// --------------------------- Protected fields ----------------------------
 
@@ -26,10 +54,6 @@ public abstract class NetChannelHandler implements NetChannel {
 	 */
 	protected final String channelID;
 	/**
-	 * The responser context to process asynchronous response callback message.
-	 */
-	protected final NetResponser responser;
-	/**
 	 * The lock object for network state updating.
 	 */
 	protected final Object stateLock = new Object();
@@ -38,8 +62,47 @@ public abstract class NetChannelHandler implements NetChannel {
 	 */
 	protected NetChannelState state = NetChannelState.CREATED;
 
+	// --------------------------- Options fields ----------------------------
+
+	/**
+	 * Indicates whether to use multithreading to process request and response data when allowed (false by default).
+	 */
+	protected boolean multithreading = CONST_MULTITHREADING;
+	/**
+	 * The thread execution priority of this channel (0 by default, the higher the value, the higher the priority, the higher value will be executed first).
+	 */
+	protected int multithreadingPriority = CONST_MULTITHREADING_PRIORITY;
+	/**
+	 * The default timeout value in milliseconds that waiting for a response data callback (120000 ms by default).
+	 */
+	protected long defaultCallbackTimeout = CONST_CALLBACK_TIMEOUT;
+	/**
+	 * If no data is received within the specified idle time in milliseconds, the channel will be closed (0 by default, when it is set to 0, this option is disabled).
+	 */
+	protected long receivingIdleTimeout = CONST_RECEIVING_IDLE_TIMEOUT;
+	/**
+	 * If no data is sent within the specified idle time in milliseconds, the channel will be closed (0 by default, when it is set to 0, this option is disabled).
+	 */
+	protected long sendingIdleTimeout = CONST_SENDING_IDLE_TIMEOUT;
+
 	// --------------------------- Private fields ----------------------------
 
+	/**
+	 * The inbounds and outbounds lock for the map.
+	 */
+	private final Object boundsLock = new Object();
+	/**
+	 * The inbounds map (the key is NetIO class, the value is inbound context object).
+	 */
+	private Map<Class<?>, NetInboundContext> inbounds;
+	/**
+	 * The outbounds map (the key is NetIO class, the value is outbound context object).
+	 */
+	private Map<Class<?>, NetOutboundContext> outbounds;
+	/**
+	 * The responser context to process asynchronous response callback message.
+	 */
+	private NetResponser responser;
 	/**
 	 * The create time of current channel in milliseconds.
 	 */
@@ -71,16 +134,18 @@ public abstract class NetChannelHandler implements NetChannel {
 	 * Constructor for network channel handler.
 	 * @param service Network channel service handler (required, not null).
 	 * @param channelID Network channel unique identification (required, not null).
+	 * @param options The network channel configuration options data (optional, set it to null if use the default options data).
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "service" or "channelID" is null or empty.
 	 */
-	public NetChannelHandler(NetServiceHandler service, String channelID) throws IllegalArgumentException {
+	public NetChannelHandler(NetServiceHandler service, String channelID, NetChannelOptions options) throws IllegalArgumentException {
 		if (service == null || StringHelper.isEmpty(channelID)) {
 			throw new IllegalArgumentException("Parameter service and channelID can not be null or empty!");
 		}
 		this.service = service;
 		this.channelID = channelID;
 		this.createTime = System.currentTimeMillis();
-		this.responser = new NetResponser(service);
+		// Set options.
+		config(options, false);
 		// Publish created event.
 		NetEventFactory factory = service.getEventFactory();
 		BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
@@ -90,6 +155,18 @@ public abstract class NetChannelHandler implements NetChannel {
 	// --------------------------- Override methods ----------------------------
 
 	@Override
+	public boolean config(NetChannelOptions options, boolean reset) {
+		if (options == null) return false;
+		// Set configure data.
+		multithreading = options.multithreading;
+		multithreadingPriority = options.multithreadingPriority;
+		defaultCallbackTimeout = options.defaultCallbackTimeout > 0 ? options.defaultCallbackTimeout : CONST_CALLBACK_TIMEOUT;
+		receivingIdleTimeout = options.receivingIdleTimeout > 0 ? options.receivingIdleTimeout : CONST_RECEIVING_IDLE_TIMEOUT;
+		sendingIdleTimeout = options.sendingIdleTimeout > 0 ? options.sendingIdleTimeout : CONST_SENDING_IDLE_TIMEOUT;
+		return true;
+	}
+
+	@Override
 	public NetService getService() {
 		return service;
 	}
@@ -97,6 +174,31 @@ public abstract class NetChannelHandler implements NetChannel {
 	@Override
 	public String getChannelID() {
 		return channelID;
+	}
+
+	@Override
+	public boolean isMultithreading() {
+		return multithreading;
+	}
+
+	@Override
+	public int getMultithreadingPriority() {
+		return multithreadingPriority;
+	}
+
+	@Override
+	public long getDefaultCallbackTimeout() {
+		return defaultCallbackTimeout;
+	}
+
+	@Override
+	public long getReceivingIdleTimeout() {
+		return receivingIdleTimeout;
+	}
+
+	@Override
+	public long getSendingIdleTimeout() {
+		return sendingIdleTimeout;
 	}
 
 	@Override
@@ -153,7 +255,17 @@ public abstract class NetChannelHandler implements NetChannel {
 
 	@Override
 	public NetResponser getResponser() {
+		if (responser != null) return responser;
+		synchronized (boundsLock) {
+			if (responser != null) return responser;
+			responser = new NetResponser();
+		}
 		return responser;
+	}
+
+	@Override
+	public long fixCallbackTimeout(long timeout) {
+		return timeout <= 0 ? defaultCallbackTimeout : timeout;
 	}
 
 	@Override
@@ -167,6 +279,84 @@ public abstract class NetChannelHandler implements NetChannel {
 		T data = (T) storedData;
 		return data;
 	}
+
+	// --------------------------- Inbound and outbound methods ----------------------------
+
+	@Override
+	public void addInbound(NetInbound<?, ?> inbound, int priority) {
+		if (inbound == null) return;
+		if (inbounds == null) {
+			synchronized (boundsLock) {
+				if (inbounds == null) {
+					inbounds = new HashMap<>();
+				}
+			}
+		}
+		NetInboundContext context = inbounds.get(inbound.getIOClass());
+		if (context == null) {
+			synchronized (inbounds) {
+				context = inbounds.get(inbound.getIOClass());
+				if (context == null) {
+					context = new NetInboundContext();
+					inbounds.put(inbound.getIOClass(), context);
+				}
+			}
+		}
+		context.add(inbound, priority);
+	}
+
+	@Override
+	public void removeInbound(NetInbound<?, ?> inbound) {
+		if (inbound == null || inbounds == null) return;
+		NetInboundContext context = inbounds.get(inbound.getIOClass());
+		if (context != null) context.remove(inbound);
+	}
+
+	@Override
+	public NetInboundObject[] getInbounds(Class<?> netIOClass) {
+		if (inbounds == null) return null;
+		NetInboundContext context = inbounds.get(netIOClass);
+		return context == null ? null : context.getInbounds();
+	}
+
+	@Override
+	public void addOutbound(NetOutbound<?, ?> outbound, int priority) {
+		if (outbound == null) return;
+		if (outbounds == null) {
+			synchronized (boundsLock) {
+				if (outbounds == null) {
+					outbounds = new HashMap<>();
+				}
+			}
+		}
+		NetOutboundContext context = outbounds.get(outbound.getIOClass());
+		if (context == null) {
+			synchronized (outbounds) {
+				context = outbounds.get(outbound.getIOClass());
+				if (context == null) {
+					context = new NetOutboundContext();
+					outbounds.put(outbound.getIOClass(), context);
+				}
+			}
+		}
+		context.add(outbound, priority);
+	}
+
+	@Override
+	public void removeOutbound(NetOutbound<?, ?> outbound) {
+		if (outbound == null || outbounds == null) return;
+		NetOutboundContext context = outbounds.get(outbound.getIOClass());
+		if (context != null) context.remove(outbound);
+	}
+
+	@Override
+	public NetOutboundObject[] getOutbounds(Class<?> netIOClass) {
+		if (outbounds == null) return null;
+		NetOutboundContext context = outbounds.get(netIOClass);
+		return context == null ? null : context.getOutbounds();
+	}
+
+	// --------------------------- Open and close methods ----------------------------
 
 	@Override
 	public boolean open() throws Exception {
@@ -207,7 +397,7 @@ public abstract class NetChannelHandler implements NetChannel {
 			if (publisher.publish(event).isCancelled()) return false;
 
 			// Callback response on closing.
-			responser.callbackOnClosing();
+			if (responser != null) responser.callbackOnClosing();
 			// Do close logic.
 			if (!doClose()) return false;
 			state = NetChannelState.CLOSED;
@@ -228,7 +418,7 @@ public abstract class NetChannelHandler implements NetChannel {
 		synchronized (stateLock) {
 			if (state == NetChannelState.CLOSED) return;
 			// Callback response on closing.
-			responser.callbackOnClosing();
+			if (responser != null) responser.callbackOnClosing();
 			// Do close logic.
 			try {
 				doClose();
@@ -246,23 +436,21 @@ public abstract class NetChannelHandler implements NetChannel {
 	public void checkRunningStatus(long currentTime) {
 
 		// Check the responses timeout.
-		responser.checkTimeout(currentTime);
+		if (responser != null) responser.checkTimeout(currentTime);
 
 		// Check reading timeout.
-		long recvIdleTimeout = service.receivingIdleTimeout;
-		boolean receivingIdleReached = (recvIdleTimeout > 0 && currentTime - messageTime > recvIdleTimeout);
+		boolean receiving = (receivingIdleTimeout > 0 && currentTime - messageTime > receivingIdleTimeout);
 		// Check sending timeout.
-		long sendIdleTimeout = service.sendingIdleTimeout;
-		boolean sendingIdleReached = (sendIdleTimeout > 0 && currentTime - sentTime > sendIdleTimeout);
+		boolean sending = (sendingIdleTimeout > 0 && currentTime - sentTime > sendingIdleTimeout);
 
 		// Close this channel on timeout.
-		if (receivingIdleReached || sendingIdleReached) {
+		if (receiving || sending) {
 			// Output message.
-			if (receivingIdleReached) {
-				FrameworkNet.getLogger().info(FrameworkNet.getLocale().text("net.message.recv.idle", recvIdleTimeout, channelID, messageTime, getClass().getName()));
+			if (receiving) {
+				FrameworkNet.getLogger().info(FrameworkNet.getLocale().text("net.message.recv.idle", receivingIdleTimeout, channelID, messageTime, getClass().getName()));
 			}
-			if (sendingIdleReached) {
-				FrameworkNet.getLogger().info(FrameworkNet.getLocale().text("net.message.send.idle", sendIdleTimeout, channelID, sentTime, getClass().getName()));
+			if (sending) {
+				FrameworkNet.getLogger().info(FrameworkNet.getLocale().text("net.message.send.idle", sendingIdleTimeout, channelID, sentTime, getClass().getName()));
 			}
 			// Close this channel.
 			try {

@@ -11,11 +11,7 @@ import org.iotcity.iot.framework.net.channel.NetService;
 public final class NetResponseResult<RES extends NetDataResponse> {
 
 	/**
-	 * The network channel of this I/O object (not null).
-	 */
-	private final NetChannel channel;
-	/**
-	 * The network input and output object (null if not exist).
+	 * The network input and output object (not null).
 	 */
 	private final NetIO<?, ?> io;
 	/**
@@ -36,23 +32,7 @@ public final class NetResponseResult<RES extends NetDataResponse> {
 	 */
 	public NetResponseResult(NetIO<?, ?> io, NetMessageStatus status, RES response) {
 		if (io == null || status == null) throw new IllegalArgumentException("Parameter io and status can not be null!");
-		this.channel = io.getChannel();
 		this.io = io;
-		this.status = status;
-		this.response = response;
-	}
-
-	/**
-	 * Constructor for network response result data.
-	 * @param channel The network channel object (required, can not be null).
-	 * @param status The message process status (required, can not be null).
-	 * @param response The response data object from remote end.
-	 * @throws IllegalArgumentException An error will be thrown when the parameter "channel" or "status" is null.
-	 */
-	public NetResponseResult(NetChannel channel, NetMessageStatus status, RES response) {
-		if (channel == null || status == null) throw new IllegalArgumentException("Parameter channel and status can not be null!");
-		this.channel = channel;
-		this.io = null;
 		this.status = status;
 		this.response = response;
 	}
@@ -61,18 +41,18 @@ public final class NetResponseResult<RES extends NetDataResponse> {
 	 * Gets the network service of response (returns not null).
 	 */
 	public NetService getService() {
-		return channel.getService();
+		return io.getService();
 	}
 
 	/**
 	 * Gets the network channel of response (returns not null).
 	 */
 	public NetChannel getChannel() {
-		return channel;
+		return io.getChannel();
 	}
 
 	/**
-	 * Gets the network input and output object of response (returns null when it does not exist).
+	 * Gets the network input and output object of response (returns not null).
 	 */
 	public NetIO<?, ?> getNetIO() {
 		return io;

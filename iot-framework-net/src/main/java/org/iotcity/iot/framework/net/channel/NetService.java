@@ -24,29 +24,9 @@ public interface NetService extends Configurable<NetServiceOptions> {
 	String getServiceID();
 
 	/**
-	 * Determines whether to use multithreading to process request and response data when allowed.
+	 * Gets the service monitoring interval in milliseconds for channel status check.
 	 */
-	boolean isMultithreading();
-
-	/**
-	 * Gets the thread execution priority of the current network service (0 by default, the higher the value, the higher the priority, the higher value will be executed first).
-	 */
-	int getMultithreadingPriority();
-
-	/**
-	 * Gets the default timeout value in milliseconds that waiting for a response data callback (the default timeout value is 120000 ms).
-	 */
-	long getDefaultCallbackTimeout();
-
-	/**
-	 * Gets the receiving idle timeout, if no data is received within the specified idle time in milliseconds, the channel will be closed (0 by default, when it is set to 0, this option is disabled).
-	 */
-	long getReceivingIdleTimeout();
-
-	/**
-	 * Gets the sending idle timeout, if no data is sent within the specified idle time in milliseconds, the channel will be closed (0 by default, when it is set to 0, this option is disabled).
-	 */
-	long getSendingIdleTimeout();
+	long getMonitoringInterval();
 
 	/**
 	 * Gets the current state of this service.
