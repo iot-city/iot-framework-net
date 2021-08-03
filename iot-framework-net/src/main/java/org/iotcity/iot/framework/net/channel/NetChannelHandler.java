@@ -134,18 +134,15 @@ public abstract class NetChannelHandler implements NetChannel {
 	 * Constructor for network channel handler.
 	 * @param service Network channel service handler (required, not null).
 	 * @param channelID Network channel unique identification (required, not null).
-	 * @param options The network channel configuration options data (optional, set it to null if use the default options data).
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "service" or "channelID" is null or empty.
 	 */
-	public NetChannelHandler(NetServiceHandler service, String channelID, NetChannelOptions options) throws IllegalArgumentException {
+	public NetChannelHandler(NetServiceHandler service, String channelID) throws IllegalArgumentException {
 		if (service == null || StringHelper.isEmpty(channelID)) {
 			throw new IllegalArgumentException("Parameter service and channelID can not be null or empty!");
 		}
 		this.service = service;
 		this.channelID = channelID;
 		this.createTime = System.currentTimeMillis();
-		// Set options.
-		config(options, false);
 		// Publish created event.
 		NetEventFactory factory = service.getEventFactory();
 		BusEventPublisher publisher = IoTFramework.getBusEventPublisher();

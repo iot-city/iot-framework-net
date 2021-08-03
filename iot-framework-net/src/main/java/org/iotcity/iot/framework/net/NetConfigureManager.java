@@ -32,6 +32,9 @@ public class NetConfigureManager extends PropertiesConfigureManager {
 		file.fromPackage = true;
 		this.addInternal(new LoggerConfigure(), IoTFramework.getLoggerFactory(), file, false);
 
+		// For external network manager configuration.
+		this.addExternal(new NetConfigure(), FrameworkNet.getGlobalNetManager(), false);
+
 	}
 
 }

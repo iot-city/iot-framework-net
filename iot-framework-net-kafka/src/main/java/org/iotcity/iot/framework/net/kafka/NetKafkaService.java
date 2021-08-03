@@ -1,8 +1,8 @@
 package org.iotcity.iot.framework.net.kafka;
 
+import org.iotcity.iot.framework.core.config.PropertiesConfigFile;
 import org.iotcity.iot.framework.net.NetManager;
 import org.iotcity.iot.framework.net.channel.NetServiceHandler;
-import org.iotcity.iot.framework.net.channel.NetServiceOptions;
 import org.iotcity.iot.framework.net.event.NetEventFactory;
 import org.iotcity.iot.framework.net.kafka.event.NetKafkaEventFactory;
 
@@ -14,13 +14,18 @@ public class NetKafkaService extends NetServiceHandler {
 
 	private final NetEventFactory eventFactory = new NetKafkaEventFactory();
 
-	public NetKafkaService(NetManager manager, String serviceID, NetServiceOptions options) throws IllegalArgumentException {
-		super(manager, serviceID, options);
+	public NetKafkaService(NetManager manager, String serviceID) throws IllegalArgumentException {
+		super(manager, serviceID);
 	}
 
 	@Override
 	public NetEventFactory getEventFactory() {
 		return eventFactory;
+	}
+
+	@Override
+	protected boolean doConfig(PropertiesConfigFile file) {
+		return false;
 	}
 
 	@Override

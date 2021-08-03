@@ -17,8 +17,20 @@ public final class FrameworkNet {
 	 * The framework net name.
 	 */
 	private static final String NET_NAME = "NET";
+	/**
+	 * The global network manager of framework.
+	 */
+	private static final NetManager netManager = new NetManager();
 
 	// --------------------------- Public static methods ----------------------------
+
+	/**
+	 * Gets the global network manager of framework (returns not null).
+	 * @return The global network manager to manage services.
+	 */
+	public static final NetManager getGlobalNetManager() {
+		return netManager;
+	}
 
 	/**
 	 * Gets a default logger object of framework net (returns not null).

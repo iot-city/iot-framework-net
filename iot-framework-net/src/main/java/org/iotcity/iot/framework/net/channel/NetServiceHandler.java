@@ -8,10 +8,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.iotcity.iot.framework.IoTFramework;
 import org.iotcity.iot.framework.core.bus.BusEventPublisher;
+import org.iotcity.iot.framework.core.config.PropertiesConfigFile;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
 import org.iotcity.iot.framework.core.util.task.PriorityRunnable;
 import org.iotcity.iot.framework.core.util.task.TaskHandler;
 import org.iotcity.iot.framework.net.NetManager;
+import org.iotcity.iot.framework.net.config.NetConfigService;
 import org.iotcity.iot.framework.net.event.NetEventFactory;
 import org.iotcity.iot.framework.net.event.NetServiceEvent;
 import org.iotcity.iot.framework.net.io.NetInbound;
@@ -135,18 +137,15 @@ public abstract class NetServiceHandler implements NetService {
 	 * Constructor for network service handler.
 	 * @param manager The net manager object (required, can not be null).
 	 * @param serviceID The service unique identification (required, can not be or empty).
-	 * @param options The network service configuration options data (optional, set it to null if use the default options data).
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "manager" or "serviceID" is null or empty.
 	 */
-	public NetServiceHandler(NetManager manager, String serviceID, NetServiceOptions options) throws IllegalArgumentException {
+	public NetServiceHandler(NetManager manager, String serviceID) throws IllegalArgumentException {
 		if (manager == null || StringHelper.isEmpty(serviceID)) {
-			throw new IllegalArgumentException("Parameter service or channelID can not be null or empty!");
+			throw new IllegalArgumentException("Parameter manager and serviceID can not be null or empty!");
 		}
 		this.manager = manager;
 		this.serviceID = serviceID;
 		this.createTime = System.currentTimeMillis();
-		// Set options.
-		config(options, false);
 		// Publish created event.
 		NetEventFactory factory = this.getEventFactory();
 		BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
@@ -156,10 +155,10 @@ public abstract class NetServiceHandler implements NetService {
 	// --------------------------- Override methods ----------------------------
 
 	@Override
-	public boolean config(NetServiceOptions options, boolean reset) {
-		if (options == null) return false;
+	public boolean config(NetConfigService data, boolean reset) {
+		if (data == null || !this.serviceID.equals(data.serviceID)) return false;
 		// Fix the monitoring interval.
-		long interval = options.monitoringInterval > 0 ? options.monitoringInterval : CONST_MONITORING_INTERVAL;
+		long interval = data.monitoringInterval > 0 ? data.monitoringInterval : CONST_MONITORING_INTERVAL;
 		// Check interval for monitoring task.
 		if (monitoringInterval != interval) {
 			monitoringInterval = interval;
@@ -172,6 +171,11 @@ public abstract class NetServiceHandler implements NetService {
 				}
 			}
 		}
+		// Get configure file.
+		PropertiesConfigFile file = data.config;
+		// Call configure.
+		if (file != null) this.doConfig(file);
+		// Return true.
 		return true;
 	}
 
@@ -438,6 +442,13 @@ public abstract class NetServiceHandler implements NetService {
 	}
 
 	// --------------------------- Abstract methods ----------------------------
+
+	/**
+	 * Do service file configuration logic.
+	 * @param file The configuration file (not null).
+	 * @return Returns whether the service was successfully configured.
+	 */
+	protected abstract boolean doConfig(PropertiesConfigFile file);
 
 	/**
 	 * Do start service processing logic.

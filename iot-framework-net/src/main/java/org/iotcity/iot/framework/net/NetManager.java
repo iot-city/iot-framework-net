@@ -1,9 +1,12 @@
 package org.iotcity.iot.framework.net;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.iotcity.iot.framework.IoTFramework;
+import org.iotcity.iot.framework.core.config.Configurable;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
 import org.iotcity.iot.framework.core.util.task.PriorityRunnable;
 import org.iotcity.iot.framework.core.util.task.TaskGroupDataContext;
@@ -12,6 +15,9 @@ import org.iotcity.iot.framework.core.util.task.TaskHandler;
 import org.iotcity.iot.framework.net.channel.NetChannel;
 import org.iotcity.iot.framework.net.channel.NetChannelSelector;
 import org.iotcity.iot.framework.net.channel.NetService;
+import org.iotcity.iot.framework.net.config.NetConfig;
+import org.iotcity.iot.framework.net.config.NetConfigPool;
+import org.iotcity.iot.framework.net.config.NetConfigService;
 import org.iotcity.iot.framework.net.io.NetDataRequest;
 import org.iotcity.iot.framework.net.io.NetDataResponse;
 import org.iotcity.iot.framework.net.io.NetIO;
@@ -22,16 +28,21 @@ import org.iotcity.iot.framework.net.io.NetRequester;
 import org.iotcity.iot.framework.net.io.NetResponseCallback;
 import org.iotcity.iot.framework.net.io.NetResponseResult;
 import org.iotcity.iot.framework.net.io.NetResponseResultGroup;
+import org.iotcity.iot.framework.net.session.NetSessionManager;
 
 /**
  * The network manager is used to manage multiple network services and provide network data receiving and sending functions.
  * @author ardon
  * @date 2021-05-16
  */
-public final class NetManager {
+public final class NetManager implements Configurable<NetConfig> {
 
 	// ------------------------------------- Private fields -------------------------------------
 
+	/**
+	 * The session manager of this net manager.
+	 */
+	private final NetSessionManager sessions = new NetSessionManager();
 	/**
 	 * The network services map (the key is the service ID, the value is the service object).
 	 */
@@ -47,24 +58,38 @@ public final class NetManager {
 	/**
 	 * Task handler objects supporting thread pool to execute tasks and timer tasks (not null).
 	 */
-	private final TaskHandler taskHandler;
+	private TaskHandler taskHandler;
 	/**
 	 * The maximum number of threads when using multithreading to send data.
 	 */
-	private final int maximumThreadSize;
+	private int maximumThreadSize;
 
 	// ------------------------------------- Constructor -------------------------------------
+
+	/**
+	 * Constructor for network manager instance.
+	 */
+	public NetManager() {
+		this.setTaskHandler(TaskHandler.getDefaultHandler());
+	}
 
 	/**
 	 * Constructor for network manager instance.
 	 * @param taskHandler The task handler object supporting thread pool to execute tasks and timer tasks.
 	 */
 	public NetManager(TaskHandler taskHandler) {
-		this.taskHandler = taskHandler;
-		this.maximumThreadSize = taskHandler.getThreadPoolExecutor().getMaximumPoolSize() / 3 - 1;
+		this.setTaskHandler(taskHandler);
 	}
 
 	// ------------------------------------- Public methods -------------------------------------
+
+	/**
+	 * Gets the session manager of this net manager (returns not null).
+	 * @return The session manager to manage sessions.
+	 */
+	public NetSessionManager getSessionManager() {
+		return sessions;
+	}
 
 	/**
 	 * Gets the task handler in this network manager (returns not null).
@@ -72,6 +97,108 @@ public final class NetManager {
 	 */
 	public TaskHandler getTaskHandler() {
 		return taskHandler;
+	}
+
+	/**
+	 * Set the task handler in this network manager.
+	 * @param taskHandler The task handler in this network manager (required, can not be null).
+	 */
+	public void setTaskHandler(TaskHandler taskHandler) {
+		if (taskHandler == null) return;
+		this.taskHandler = taskHandler;
+		this.maximumThreadSize = taskHandler.getThreadPoolExecutor().getMaximumPoolSize() / 3 - 1;
+	}
+
+	@Override
+	public boolean config(NetConfig data, boolean reset) {
+		if (data == null) return false;
+
+		// Reset all services if necessary.
+		if (reset && services.size() > 0) {
+			synchronized (services) {
+				NetService[] svcs = getServices();
+				for (NetService svc : svcs) {
+					try {
+						svc.stop();
+					} catch (Exception e) {
+						FrameworkNet.getLogger().error(e);
+					}
+				}
+				services.clear();
+			}
+		}
+
+		// Do task handler configuration.
+		NetConfigPool pool = data.pool;
+		if (pool != null) {
+			this.setTaskHandler(new TaskHandler("NetManager", pool.corePoolSize, pool.maximumPoolSize, pool.keepAliveTime, pool.capacity));
+		}
+
+		// Do session manager configuration.
+		this.sessions.config(data.sessions, reset);
+
+		// Do services configuration.
+		NetConfigService[] svcsConfig = data.services;
+		if (svcsConfig != null && svcsConfig.length > 0) {
+			for (NetConfigService config : svcsConfig) {
+				// Verify config data.
+				if (!config.enabled) continue;
+
+				// New service instance.
+				Class<?> clazz = config.instance;
+				NetService service = null;
+				try {
+					@SuppressWarnings("unchecked")
+					Constructor<NetService> constructor = (Constructor<NetService>) clazz.getDeclaredConstructor(NetManager.class, String.class);
+					service = constructor.newInstance(this, config.serviceID);
+				} catch (Exception e) {
+					if (e instanceof NoSuchMethodException) {
+						try {
+							service = IoTFramework.getGlobalInstanceFactory().getInstance(clazz);
+						} catch (Exception e2) {
+							FrameworkNet.getLogger().error(e2);
+						}
+					} else {
+						FrameworkNet.getLogger().error(e);
+					}
+				}
+				if (service == null) return false;
+
+				// Config service.
+				service.config(config, reset);
+				// Add to manager.
+				this.addService(service);
+
+				// Start service automatically.
+				if (config.autoStart) {
+					// Get task handler.
+					TaskHandler handler = taskHandler;
+					// Get task service.
+					final NetService taskService = service;
+					// Create service starting task.
+					Runnable task = new PriorityRunnable(0) {
+
+						@Override
+						public void run() {
+							try {
+								taskService.start();
+							} catch (Exception e) {
+								FrameworkNet.getLogger().error(e);
+							}
+						}
+
+					};
+					// Start service.
+					if (config.autoStartDelay > 0) {
+						handler.addDelayTask(task, config.autoStartDelay);
+					} else {
+						handler.run(task);
+					}
+				}
+			}
+		}
+		// Return true by default.
+		return true;
 	}
 
 	// ------------------------------------- Service methods -------------------------------------
@@ -153,8 +280,10 @@ public final class NetManager {
 		// Multithreading is used only for asynchronous response mode.
 		if (io.isAsynchronous() && io.isMultithreading()) {
 
+			// Get task handler.
+			TaskHandler handler = taskHandler;
 			// Run multithreading task.
-			boolean submitted = taskHandler.run(new PriorityRunnable(io.getChannel().getMultithreadingPriority()) {
+			boolean submitted = handler.run(new PriorityRunnable(io.getChannel().getMultithreadingPriority()) {
 
 				@Override
 				public void run() {
