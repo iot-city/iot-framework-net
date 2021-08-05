@@ -114,6 +114,11 @@ public interface NetService extends Configurable<NetConfigService> {
 	NetInboundObject[] getInbounds(Class<?> netIOClass);
 
 	/**
+	 * Remove all inbound message processing objects from this service.
+	 */
+	void clearInbounds();
+
+	/**
 	 * Add outbound message processing object to this service.
 	 * @param outbound Network outbound message processing object.
 	 * @param priority Outbound message processing priority (the priority with the highest value is called first, 0 by default).
@@ -132,6 +137,11 @@ public interface NetService extends Configurable<NetConfigService> {
 	 * @return Outbound message processing objects.
 	 */
 	NetOutboundObject[] getOutbounds(Class<?> netIOClass);
+
+	/**
+	 * Remove all outbound message processing objects from this service.
+	 */
+	void clearOutbounds();
 
 	/**
 	 * Start this service.

@@ -23,6 +23,14 @@ public class NetConfigService {
 	 */
 	public Class<?> instance;
 	/**
+	 * The network service inbound configuration data array.
+	 */
+	public NetConfigInbound[] inbounds;
+	/**
+	 * The network service outbound configuration data array.
+	 */
+	public NetConfigOutbound[] outbounds;
+	/**
 	 * The service configuration file.
 	 */
 	public PropertiesConfigFile config;

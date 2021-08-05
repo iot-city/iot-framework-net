@@ -1,7 +1,6 @@
 package org.iotcity.iot.framework.net;
 
 import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -114,18 +113,9 @@ public final class NetManager implements Configurable<NetConfig> {
 		if (data == null) return false;
 
 		// Reset all services if necessary.
-		if (reset && services.size() > 0) {
-			synchronized (services) {
-				NetService[] svcs = getServices();
-				for (NetService svc : svcs) {
-					try {
-						svc.stop();
-					} catch (Exception e) {
-						FrameworkNet.getLogger().error(e);
-					}
-				}
-				services.clear();
-			}
+		if (reset) {
+			// Stop and remove all services.
+			this.removeAllServices(true);
 		}
 
 		// Do task handler configuration.
@@ -148,13 +138,17 @@ public final class NetManager implements Configurable<NetConfig> {
 				Class<?> clazz = config.instance;
 				NetService service = null;
 				try {
-					@SuppressWarnings("unchecked")
-					Constructor<NetService> constructor = (Constructor<NetService>) clazz.getDeclaredConstructor(NetManager.class, String.class);
-					service = constructor.newInstance(this, config.serviceID);
+					service = IoTFramework.getInstance(clazz, new Class<?>[] {
+						NetManager.class,
+						String.class
+					}, new Object[] {
+						this,
+						config.serviceID
+					});
 				} catch (Exception e) {
 					if (e instanceof NoSuchMethodException) {
 						try {
-							service = IoTFramework.getGlobalInstanceFactory().getInstance(clazz);
+							service = IoTFramework.getInstance(clazz);
 						} catch (Exception e2) {
 							FrameworkNet.getLogger().error(e2);
 						}
@@ -162,12 +156,12 @@ public final class NetManager implements Configurable<NetConfig> {
 						FrameworkNet.getLogger().error(e);
 					}
 				}
-				if (service == null) return false;
 
-				// Config service.
-				service.config(config, reset);
-				// Add to manager.
-				this.addService(service);
+				// Add to manager and config the service.
+				if (!this.addService(service) || !service.config(config, reset)) {
+					FrameworkNet.getLogger().error(FrameworkNet.getLocale().text("net.manager.config.err", clazz.getName(), config.serviceID));
+					return false;
+				}
 
 				// Start service automatically.
 				if (config.autoStart) {
@@ -204,14 +198,44 @@ public final class NetManager implements Configurable<NetConfig> {
 	// ------------------------------------- Service methods -------------------------------------
 
 	/**
+	 * Start all services.
+	 */
+	public void startAllServices() {
+		NetService[] svcs = getServices();
+		if (svcs.length == 0) return;
+		for (NetService svc : svcs) {
+			try {
+				svc.start();
+			} catch (Exception e) {
+				FrameworkNet.getLogger().error(e);
+			}
+		}
+	}
+
+	/**
+	 * Stop all services.
+	 */
+	public void stopAllServices() {
+		NetService[] svcs = getServices();
+		if (svcs.length == 0) return;
+		for (NetService svc : svcs) {
+			try {
+				svc.stop();
+			} catch (Exception e) {
+				FrameworkNet.getLogger().error(e);
+			}
+		}
+	}
+
+	/**
 	 * Add a network service to this manager. <br/>
-	 * If the network service with the same service ID already exists in the manager or the manager object is different from service manager object, the false value will be returned.
+	 * If the network service with the same service ID already exists in the manager or this manager is different from service manager object, the false value will be returned.
 	 * @param service The network service object (required, can not be null).
 	 * @return Returns whether the addition was successful.
 	 */
 	public boolean addService(NetService service) {
 		if (service == null || service.getNetManager() != this) return false;
-		String serviceID = service.getServiceID();
+		String serviceID = service.getServiceID().toUpperCase();
 		synchronized (services) {
 			if (services.containsKey(serviceID)) return false;
 			services.put(serviceID, service);
@@ -227,7 +251,29 @@ public final class NetManager implements Configurable<NetConfig> {
 	public NetService removeService(String serviceID) {
 		if (StringHelper.isEmpty(serviceID)) return null;
 		synchronized (services) {
-			return services.remove(serviceID);
+			return services.remove(serviceID.toUpperCase());
+		}
+	}
+
+	/**
+	 * Remove all services from this manager (returns not null).
+	 * @param stopOnRemoved Indicates whether to stop the service on removal.
+	 * @return The services in this manager.
+	 */
+	public NetService[] removeAllServices(boolean stopOnRemoved) {
+		synchronized (services) {
+			NetService[] svcs = services.values().toArray(new NetService[services.size()]);
+			if (stopOnRemoved) {
+				for (NetService svc : svcs) {
+					try {
+						svc.stop();
+					} catch (Exception e) {
+						FrameworkNet.getLogger().error(e);
+					}
+				}
+			}
+			services.clear();
+			return svcs;
 		}
 	}
 
@@ -238,7 +284,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 */
 	public NetService getService(String serviceID) {
 		if (StringHelper.isEmpty(serviceID)) return null;
-		return services.get(serviceID);
+		return services.get(serviceID.toUpperCase());
 	}
 
 	/**
@@ -246,7 +292,9 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @return The services in this manager.
 	 */
 	public NetService[] getServices() {
-		return services.values().toArray(new NetService[services.size()]);
+		synchronized (services) {
+			return services.values().toArray(new NetService[services.size()]);
+		}
 	}
 
 	/**

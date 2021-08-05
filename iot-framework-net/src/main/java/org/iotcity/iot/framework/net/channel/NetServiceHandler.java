@@ -12,7 +12,10 @@ import org.iotcity.iot.framework.core.config.PropertiesConfigFile;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
 import org.iotcity.iot.framework.core.util.task.PriorityRunnable;
 import org.iotcity.iot.framework.core.util.task.TaskHandler;
+import org.iotcity.iot.framework.net.FrameworkNet;
 import org.iotcity.iot.framework.net.NetManager;
+import org.iotcity.iot.framework.net.config.NetConfigInbound;
+import org.iotcity.iot.framework.net.config.NetConfigOutbound;
 import org.iotcity.iot.framework.net.config.NetConfigService;
 import org.iotcity.iot.framework.net.event.NetEventFactory;
 import org.iotcity.iot.framework.net.event.NetServiceEvent;
@@ -156,7 +159,14 @@ public abstract class NetServiceHandler implements NetService {
 
 	@Override
 	public boolean config(NetConfigService data, boolean reset) {
-		if (data == null || !this.serviceID.equals(data.serviceID)) return false;
+		if (data == null || !this.serviceID.equalsIgnoreCase(data.serviceID)) return false;
+
+		// Reset configuration data.
+		if (reset) {
+			this.clearInbounds();
+			this.clearOutbounds();
+		}
+
 		// Fix the monitoring interval.
 		long interval = data.monitoringInterval > 0 ? data.monitoringInterval : CONST_MONITORING_INTERVAL;
 		// Check interval for monitoring task.
@@ -171,12 +181,37 @@ public abstract class NetServiceHandler implements NetService {
 				}
 			}
 		}
-		// Get configure file.
-		PropertiesConfigFile file = data.config;
-		// Call configure.
-		if (file != null) this.doConfig(file);
-		// Return true.
-		return true;
+
+		// Setup inbounds.
+		NetConfigInbound[] ins = data.inbounds;
+		if (ins != null && ins.length > 0) {
+			for (NetConfigInbound config : ins) {
+				if (config == null || config.instance == null) continue;
+				try {
+					this.addInbound(IoTFramework.getInstance(config.instance), config.priority);
+				} catch (Exception e) {
+					FrameworkNet.getLogger().error(e);
+					return false;
+				}
+			}
+		}
+
+		// Setup outbounds.
+		NetConfigOutbound[] outs = data.outbounds;
+		if (outs != null && outs.length > 0) {
+			for (NetConfigOutbound config : outs) {
+				if (config == null || config.instance == null) continue;
+				try {
+					this.addOutbound(IoTFramework.getInstance(config.instance), config.priority);
+				} catch (Exception e) {
+					FrameworkNet.getLogger().error(e);
+					return false;
+				}
+			}
+		}
+
+		// Return configuration result.
+		return this.doConfig(data.config);
 	}
 
 	@Override
@@ -301,6 +336,13 @@ public abstract class NetServiceHandler implements NetService {
 	}
 
 	@Override
+	public void clearInbounds() {
+		synchronized (inbounds) {
+			inbounds.clear();
+		}
+	}
+
+	@Override
 	public void addOutbound(NetOutbound<?, ?> outbound, int priority) {
 		if (outbound == null) return;
 		NetOutboundContext context = outbounds.get(outbound.getIOClass());
@@ -327,6 +369,13 @@ public abstract class NetServiceHandler implements NetService {
 	public NetOutboundObject[] getOutbounds(Class<?> netIOClass) {
 		NetOutboundContext context = outbounds.get(netIOClass);
 		return context == null ? null : context.getOutbounds();
+	}
+
+	@Override
+	public void clearOutbounds() {
+		synchronized (outbounds) {
+			outbounds.clear();
+		}
 	}
 
 	// --------------------------- Start and stop methods ----------------------------
@@ -405,7 +454,7 @@ public abstract class NetServiceHandler implements NetService {
 	 * @param channel The network channel object.
 	 */
 	void addChannel(NetChannel channel) {
-		if (state != NetServiceState.STARTED) return;
+		if (state == NetServiceState.STOPPED) return;
 		channels.put(channel.getChannelID(), channel);
 		synchronized (channelLock) {
 			if (!channelChanged) channelChanged = true;
@@ -445,7 +494,7 @@ public abstract class NetServiceHandler implements NetService {
 
 	/**
 	 * Do service file configuration logic.
-	 * @param file The configuration file (not null).
+	 * @param file The configuration file (it is null when there is no configuration file).
 	 * @return Returns whether the service was successfully configured.
 	 */
 	protected abstract boolean doConfig(PropertiesConfigFile file);

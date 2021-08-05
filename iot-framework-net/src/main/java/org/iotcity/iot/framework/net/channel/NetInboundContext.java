@@ -3,8 +3,10 @@ package org.iotcity.iot.framework.net.channel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.iotcity.iot.framework.net.io.NetInbound;
 
@@ -19,6 +21,10 @@ public final class NetInboundContext {
 	 * Lock for modified status.
 	 */
 	private final Object lock = new Object();
+	/**
+	 * The inbound classes.
+	 */
+	private final Set<Class<?>> classes = new HashSet<>();
 	/**
 	 * The inbound object list.
 	 */
@@ -55,7 +61,10 @@ public final class NetInboundContext {
 	 * @param priority Inbound message processing priority (the priority with the highest value is called first, 0 by default).
 	 */
 	void add(NetInbound<?, ?> inbound, int priority) {
+		Class<?> clazz = inbound.getClass();
 		synchronized (lock) {
+			if (classes.contains(clazz)) return;
+			classes.add(clazz);
 			list.add(new NetInboundObject(inbound, priority));
 			if (!modified) modified = true;
 		}
@@ -66,7 +75,6 @@ public final class NetInboundContext {
 	 * @param inbound Network inbound message processing object (not null).
 	 */
 	void remove(NetInbound<?, ?> inbound) {
-		if (inbound == null) return;
 		synchronized (lock) {
 			Iterator<NetInboundObject> iterator = list.iterator();
 			while (iterator.hasNext()) {
@@ -74,6 +82,8 @@ public final class NetInboundContext {
 				if (inbound == obj.inbound) {
 					iterator.remove();
 					if (!modified) modified = true;
+					classes.remove(inbound.getClass());
+					break;
 				}
 			}
 		}
