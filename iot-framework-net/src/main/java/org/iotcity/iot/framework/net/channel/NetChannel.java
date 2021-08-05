@@ -144,6 +144,11 @@ public interface NetChannel extends Configurable<NetChannelOptions> {
 	NetInboundObject[] getInbounds(Class<?> netIOClass);
 
 	/**
+	 * Remove all inbound message processing objects from this channel.
+	 */
+	void clearInbounds();
+
+	/**
 	 * Add outbound message processing object to this channel.
 	 * @param outbound Network outbound message processing object.
 	 * @param priority Outbound message processing priority (the priority with the highest value is called first, 0 by default).
@@ -162,6 +167,11 @@ public interface NetChannel extends Configurable<NetChannelOptions> {
 	 * @return Outbound message processing objects.
 	 */
 	NetOutboundObject[] getOutbounds(Class<?> netIOClass);
+
+	/**
+	 * Remove all outbound message processing objects from this channel.
+	 */
+	void clearOutbounds();
 
 	/**
 	 * Open this channel, after successful opening, this channel will be automatically added to the service.

@@ -392,6 +392,8 @@ public abstract class NetServiceHandler implements NetService {
 			NetServiceEvent event = factory.createServiceEvent(this, this, NetServiceState.STARTING);
 			if (publisher.publish(event).isCancelled()) return false;
 
+			// Reset to created state after stopping.
+			if (state == NetServiceState.STOPPED) state = NetServiceState.CREATED;
 			// Do start logic.
 			if (!doStart()) return false;
 			state = NetServiceState.STARTED;

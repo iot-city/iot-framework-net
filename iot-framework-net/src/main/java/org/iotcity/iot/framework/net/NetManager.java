@@ -115,7 +115,7 @@ public final class NetManager implements Configurable<NetConfig> {
 		// Reset all services if necessary.
 		if (reset) {
 			// Stop and remove all services.
-			this.removeAllServices(true);
+			this.clearServices(true);
 		}
 
 		// Do task handler configuration.
@@ -260,7 +260,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @param stopOnRemoved Indicates whether to stop the service on removal.
 	 * @return The services in this manager.
 	 */
-	public NetService[] removeAllServices(boolean stopOnRemoved) {
+	public NetService[] clearServices(boolean stopOnRemoved) {
 		synchronized (services) {
 			NetService[] svcs = services.values().toArray(new NetService[services.size()]);
 			if (stopOnRemoved) {

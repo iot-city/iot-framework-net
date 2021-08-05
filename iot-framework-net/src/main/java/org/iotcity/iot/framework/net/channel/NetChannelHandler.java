@@ -7,6 +7,8 @@ import org.iotcity.iot.framework.IoTFramework;
 import org.iotcity.iot.framework.core.bus.BusEventPublisher;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
 import org.iotcity.iot.framework.net.FrameworkNet;
+import org.iotcity.iot.framework.net.config.NetConfigInbound;
+import org.iotcity.iot.framework.net.config.NetConfigOutbound;
 import org.iotcity.iot.framework.net.event.NetChannelEvent;
 import org.iotcity.iot.framework.net.event.NetEventFactory;
 import org.iotcity.iot.framework.net.io.NetInbound;
@@ -154,12 +156,49 @@ public abstract class NetChannelHandler implements NetChannel {
 	@Override
 	public boolean config(NetChannelOptions options, boolean reset) {
 		if (options == null) return false;
+
+		// Reset configuration data.
+		if (reset) {
+			this.clearInbounds();
+			this.clearOutbounds();
+		}
+
 		// Set configure data.
 		multithreading = options.multithreading;
 		multithreadingPriority = options.multithreadingPriority;
 		defaultCallbackTimeout = options.defaultCallbackTimeout > 0 ? options.defaultCallbackTimeout : CONST_CALLBACK_TIMEOUT;
 		receivingIdleTimeout = options.receivingIdleTimeout > 0 ? options.receivingIdleTimeout : CONST_RECEIVING_IDLE_TIMEOUT;
 		sendingIdleTimeout = options.sendingIdleTimeout > 0 ? options.sendingIdleTimeout : CONST_SENDING_IDLE_TIMEOUT;
+
+		// Setup inbounds.
+		NetConfigInbound[] ins = options.inbounds;
+		if (ins != null && ins.length > 0) {
+			for (NetConfigInbound config : ins) {
+				if (config == null || config.instance == null) continue;
+				try {
+					this.addInbound(IoTFramework.getInstance(config.instance), config.priority);
+				} catch (Exception e) {
+					FrameworkNet.getLogger().error(e);
+					return false;
+				}
+			}
+		}
+
+		// Setup outbounds.
+		NetConfigOutbound[] outs = options.outbounds;
+		if (outs != null && outs.length > 0) {
+			for (NetConfigOutbound config : outs) {
+				if (config == null || config.instance == null) continue;
+				try {
+					this.addOutbound(IoTFramework.getInstance(config.instance), config.priority);
+				} catch (Exception e) {
+					FrameworkNet.getLogger().error(e);
+					return false;
+				}
+			}
+		}
+
+		// Return configuration result.
 		return true;
 	}
 
@@ -317,6 +356,14 @@ public abstract class NetChannelHandler implements NetChannel {
 	}
 
 	@Override
+	public void clearInbounds() {
+		if (inbounds == null) return;
+		synchronized (inbounds) {
+			inbounds.clear();
+		}
+	}
+
+	@Override
 	public void addOutbound(NetOutbound<?, ?> outbound, int priority) {
 		if (outbound == null) return;
 		if (outbounds == null) {
@@ -353,6 +400,14 @@ public abstract class NetChannelHandler implements NetChannel {
 		return context == null ? null : context.getOutbounds();
 	}
 
+	@Override
+	public void clearOutbounds() {
+		if (outbounds == null) return;
+		synchronized (outbounds) {
+			outbounds.clear();
+		}
+	}
+
 	// --------------------------- Open and close methods ----------------------------
 
 	@Override
@@ -367,6 +422,8 @@ public abstract class NetChannelHandler implements NetChannel {
 			NetChannelEvent event = factory.createChannelEvent(this, this, NetChannelState.OPENING);
 			if (publisher.publish(event).isCancelled()) return false;
 
+			// Reset to created state after closing.
+			if (state == NetChannelState.CLOSED) state = NetChannelState.CREATED;
 			// Do open logic.
 			if (!doOpen()) return false;
 			state = NetChannelState.OPENED;
