@@ -1,7 +1,6 @@
 package org.iotcity.iot.framework.net.config;
 
-import org.iotcity.iot.framework.core.config.PropertiesConfigFile;
-import org.iotcity.iot.framework.net.channel.NetServiceHandler;
+import org.iotcity.iot.framework.net.channel.NetServiceOptions;
 
 /**
  * The network service configuration data.
@@ -23,18 +22,6 @@ public class NetConfigService {
 	 */
 	public Class<?> instance;
 	/**
-	 * The network service inbound configuration data array.
-	 */
-	public NetConfigInbound[] inbounds;
-	/**
-	 * The network service outbound configuration data array.
-	 */
-	public NetConfigOutbound[] outbounds;
-	/**
-	 * The service configuration file.
-	 */
-	public PropertiesConfigFile config;
-	/**
 	 * Indicates whether the service starts automatically after configuration (true by default).
 	 */
 	public boolean autoStart = true;
@@ -43,8 +30,8 @@ public class NetConfigService {
 	 */
 	public long autoStartDelay = 0;
 	/**
-	 * The service monitoring interval in milliseconds for channel status check (10000 ms by default).
+	 * The service configuration options (null by default).
 	 */
-	public long monitoringInterval = NetServiceHandler.CONST_MONITORING_INTERVAL;
+	public NetServiceOptions options;
 
 }

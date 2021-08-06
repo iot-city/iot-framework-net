@@ -11,11 +11,11 @@ import org.iotcity.iot.framework.net.config.NetConfigOutbound;
 public class NetChannelOptions {
 
 	/**
-	 * The network channel inbound configuration data array.
+	 * The network channel inbound configuration data array (null by default).
 	 */
 	public NetConfigInbound[] inbounds;
 	/**
-	 * The network channel outbound configuration data array.
+	 * The network channel outbound configuration data array (null by default).
 	 */
 	public NetConfigOutbound[] outbounds;
 	/**

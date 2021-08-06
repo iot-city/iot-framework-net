@@ -16,7 +16,6 @@ import org.iotcity.iot.framework.net.FrameworkNet;
 import org.iotcity.iot.framework.net.NetManager;
 import org.iotcity.iot.framework.net.config.NetConfigInbound;
 import org.iotcity.iot.framework.net.config.NetConfigOutbound;
-import org.iotcity.iot.framework.net.config.NetConfigService;
 import org.iotcity.iot.framework.net.event.NetEventFactory;
 import org.iotcity.iot.framework.net.event.NetServiceEvent;
 import org.iotcity.iot.framework.net.io.NetInbound;
@@ -158,8 +157,9 @@ public abstract class NetServiceHandler implements NetService {
 	// --------------------------- Override methods ----------------------------
 
 	@Override
-	public boolean config(NetConfigService data, boolean reset) {
-		if (data == null || !this.serviceID.equalsIgnoreCase(data.serviceID)) return false;
+	public boolean config(NetServiceOptions data, boolean reset) {
+		// Returns true if there is no options data.
+		if (data == null) return true;
 
 		// Reset configuration data.
 		if (reset) {

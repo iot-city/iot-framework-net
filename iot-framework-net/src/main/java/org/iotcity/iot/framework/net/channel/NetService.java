@@ -2,7 +2,6 @@ package org.iotcity.iot.framework.net.channel;
 
 import org.iotcity.iot.framework.core.config.Configurable;
 import org.iotcity.iot.framework.net.NetManager;
-import org.iotcity.iot.framework.net.config.NetConfigService;
 import org.iotcity.iot.framework.net.event.NetEventFactory;
 import org.iotcity.iot.framework.net.io.NetInbound;
 import org.iotcity.iot.framework.net.io.NetOutbound;
@@ -12,7 +11,7 @@ import org.iotcity.iot.framework.net.io.NetOutbound;
  * @author ardon
  * @date 2021-06-19
  */
-public interface NetService extends Configurable<NetConfigService> {
+public interface NetService extends Configurable<NetServiceOptions> {
 
 	/**
 	 * Gets the network manager (returns not null).

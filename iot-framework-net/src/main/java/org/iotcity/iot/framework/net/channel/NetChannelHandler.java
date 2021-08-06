@@ -154,8 +154,9 @@ public abstract class NetChannelHandler implements NetChannel {
 	// --------------------------- Override methods ----------------------------
 
 	@Override
-	public boolean config(NetChannelOptions options, boolean reset) {
-		if (options == null) return false;
+	public boolean config(NetChannelOptions data, boolean reset) {
+		// Returns true if there is no options data.
+		if (data == null) return true;
 
 		// Reset configuration data.
 		if (reset) {
@@ -164,14 +165,14 @@ public abstract class NetChannelHandler implements NetChannel {
 		}
 
 		// Set configure data.
-		multithreading = options.multithreading;
-		multithreadingPriority = options.multithreadingPriority;
-		defaultCallbackTimeout = options.defaultCallbackTimeout > 0 ? options.defaultCallbackTimeout : CONST_CALLBACK_TIMEOUT;
-		receivingIdleTimeout = options.receivingIdleTimeout > 0 ? options.receivingIdleTimeout : CONST_RECEIVING_IDLE_TIMEOUT;
-		sendingIdleTimeout = options.sendingIdleTimeout > 0 ? options.sendingIdleTimeout : CONST_SENDING_IDLE_TIMEOUT;
+		multithreading = data.multithreading;
+		multithreadingPriority = data.multithreadingPriority;
+		defaultCallbackTimeout = data.defaultCallbackTimeout > 0 ? data.defaultCallbackTimeout : CONST_CALLBACK_TIMEOUT;
+		receivingIdleTimeout = data.receivingIdleTimeout > 0 ? data.receivingIdleTimeout : CONST_RECEIVING_IDLE_TIMEOUT;
+		sendingIdleTimeout = data.sendingIdleTimeout > 0 ? data.sendingIdleTimeout : CONST_SENDING_IDLE_TIMEOUT;
 
 		// Setup inbounds.
-		NetConfigInbound[] ins = options.inbounds;
+		NetConfigInbound[] ins = data.inbounds;
 		if (ins != null && ins.length > 0) {
 			for (NetConfigInbound config : ins) {
 				if (config == null || config.instance == null) continue;
@@ -185,7 +186,7 @@ public abstract class NetChannelHandler implements NetChannel {
 		}
 
 		// Setup outbounds.
-		NetConfigOutbound[] outs = options.outbounds;
+		NetConfigOutbound[] outs = data.outbounds;
 		if (outs != null && outs.length > 0) {
 			for (NetConfigOutbound config : outs) {
 				if (config == null || config.instance == null) continue;
