@@ -10,9 +10,9 @@ public class NetConfig {
 	/**
 	 * The thread pool executor configure data of net manager.<br/>
 	 * 1. This configuration will be used for message and request task processing.<br/>
-	 * 2. When set it to null, the global task handler instance in framework core is used.
+	 * 2. When set it to null, the default pool options is used.
 	 */
-	public NetConfigPool pool;
+	public NetConfigPool pool = new NetConfigPool();
 	/**
 	 * The session group configure data array.<br/>
 	 * Use this configuration to initialize session groups, and the group ID is consistent with the group ID defined in session manager.

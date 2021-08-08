@@ -13,20 +13,20 @@ import org.iotcity.iot.framework.core.util.task.PriorityLimitedBlockingQueue;
 public class NetConfigPool {
 
 	/**
-	 * The number of threads to keep in the pool (8 by default).
+	 * The number of threads to keep in the pool (128 by default).
 	 */
-	public int corePoolSize = 8;
+	public int corePoolSize = 128;
 	/**
-	 * The maximum number of threads to allow in the pool (8 by default).
+	 * The maximum number of threads to allow in the pool (1024 by default).
 	 */
-	public int maximumPoolSize = 8;
+	public int maximumPoolSize = 1024;
 	/**
 	 * The maximum seconds that excess idle threads will wait for new tasks before terminating (60s by default).
 	 */
 	public long keepAliveTime = 60;
 	/**
-	 * The capacity of blocking queue to cache tasks in thread pool executor (1000 by default, when set to 0, the synchronous queue {@link SynchronousQueue } is used; when set to greater than 0, the bounded priority blocking queue {@link PriorityLimitedBlockingQueue } is used; when set to less than 0, the unbounded priority blocking queue {@link PriorityBlockingQueue } is used).
+	 * The capacity of blocking queue to cache tasks in thread pool executor (10240 by default, when set to 0, the synchronous queue {@link SynchronousQueue } is used; when set to greater than 0, the bounded priority blocking queue {@link PriorityLimitedBlockingQueue } is used; when set to less than 0, the unbounded priority blocking queue {@link PriorityBlockingQueue } is used).
 	 */
-	public int capacity = 1000;
+	public int capacity = 10240;
 
 }
