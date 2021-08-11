@@ -5,7 +5,7 @@ package org.iotcity.iot.framework.net.io;
  * @author ardon
  * @date 2021-06-27
  */
-public class NetResponseCallbackLocker<RES extends NetDataResponse> extends NetResponseCallback<RES> {
+public final class NetResponseCallbackLocker<RES extends NetDataResponse> extends NetResponseCallback<RES> {
 
 	/**
 	 * Response lock object.
@@ -25,7 +25,7 @@ public class NetResponseCallbackLocker<RES extends NetDataResponse> extends NetR
 	 * @param io The network input and output object (required, can not be null).
 	 * @param timeout The timeout value in milliseconds that waiting for a response data callback (required, the parameter value can not be less than or equal to 0).
 	 */
-	public void waitForResponse(NetIO<?, ?> io, long timeout) {
+	public final void waitForResponse(NetIO<?, ?> io, long timeout) {
 		if (locked || callbacked || timeout <= 0) return;
 
 		synchronized (lock) {
@@ -60,7 +60,7 @@ public class NetResponseCallbackLocker<RES extends NetDataResponse> extends NetR
 	 * @param result The network response result data (not null).
 	 * @throws Exception Throw an exception when an error is encountered.
 	 */
-	public void callbackResult(NetResponseResult<RES> result) throws Exception {
+	public final void callbackResult(NetResponseResult<RES> result) throws Exception {
 		if (callbacked || result == null) return;
 		synchronized (lock) {
 			if (callbacked) return;
@@ -71,7 +71,7 @@ public class NetResponseCallbackLocker<RES extends NetDataResponse> extends NetR
 	}
 
 	@Override
-	public void onCallback(NetResponseResult<RES> result) throws Exception {
+	public final void onCallback(NetResponseResult<RES> result) throws Exception {
 		// There is no need to handle this logic.
 	}
 

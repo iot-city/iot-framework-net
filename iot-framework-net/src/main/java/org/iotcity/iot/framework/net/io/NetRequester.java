@@ -30,7 +30,7 @@ public final class NetRequester {
 	 * @return The message process status.
 	 * @throws IllegalArgumentException An error will be thrown when one of the parameters "io", "request" or "responseClass" is null.
 	 */
-	public <REQ extends NetDataRequest, RES extends NetDataResponse> NetMessageStatus asyncRequest(NetIO<?, ?> io, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
+	public final <REQ extends NetDataRequest, RES extends NetDataResponse> NetMessageStatus asyncRequest(NetIO<?, ?> io, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
 		if (io == null || request == null || responseClass == null) throw new IllegalArgumentException("Parameter io, request and responseClass can not be null!");
 
 		// Gets the channel of I/O object.
@@ -116,7 +116,7 @@ public final class NetRequester {
 	 * @param timeout The timeout value in milliseconds that waiting for a response data callback (optional, the global configuration timeout is used when the parameter value is less than or equal to 0).
 	 * @return The message process status.
 	 */
-	private <REQ extends NetDataRequest, RES extends NetDataResponse> NetMessageStatus asyncRequestWithCallback(NetOutbound<?, ?> outbound, NetIO<?, ?> io, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
+	private final <REQ extends NetDataRequest, RES extends NetDataResponse> NetMessageStatus asyncRequestWithCallback(NetOutbound<?, ?> outbound, NetIO<?, ?> io, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
 		// Check asynchronous interface.
 		if (!(request instanceof NetDataAsyncRequest)) {
 
@@ -175,7 +175,7 @@ public final class NetRequester {
 	 * @param timeout The timeout value in milliseconds that waiting for a response data callback (optional, the global configuration timeout is used when the parameter value is less than or equal to 0).
 	 * @return The message process status.
 	 */
-	private <REQ extends NetDataRequest, RES extends NetDataResponse> NetMessageStatus syncRequestWithCallback(NetOutbound<?, ?> outbound, NetIO<?, ?> io, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
+	private final <REQ extends NetDataRequest, RES extends NetDataResponse> NetMessageStatus syncRequestWithCallback(NetOutbound<?, ?> outbound, NetIO<?, ?> io, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
 		// Define message status.
 		NetMessageStatus status;
 
@@ -262,7 +262,7 @@ public final class NetRequester {
 	 * @param responseClass The response data class (required, can not be null).
 	 * @return The network response result data.
 	 */
-	private <REQ extends NetDataRequest, RES extends NetDataResponse> NetResponseResult<RES> readSyncResponse(NetIO<?, ?> io, REQ request, Class<RES> responseClass) throws IllegalArgumentException {
+	private final <REQ extends NetDataRequest, RES extends NetDataResponse> NetResponseResult<RES> readSyncResponse(NetIO<?, ?> io, REQ request, Class<RES> responseClass) throws IllegalArgumentException {
 		// Get inbounds.
 		NetInboundObject[] inbounds = io.getInbounds();
 		// Check inbounds.
@@ -324,7 +324,7 @@ public final class NetRequester {
 	 * @return The network response result data.
 	 * @throws IllegalArgumentException An error will be thrown when one of the parameters "io", "request" or "responseClass" is null.
 	 */
-	public <REQ extends NetDataRequest, RES extends NetDataResponse> NetResponseResult<RES> syncRequest(NetIO<?, ?> io, REQ request, Class<RES> responseClass, long timeout) throws IllegalArgumentException {
+	public final <REQ extends NetDataRequest, RES extends NetDataResponse> NetResponseResult<RES> syncRequest(NetIO<?, ?> io, REQ request, Class<RES> responseClass, long timeout) throws IllegalArgumentException {
 		if (io == null || request == null || responseClass == null) throw new IllegalArgumentException("Parameter io, request and responseClass can not be null!");
 
 		// Gets the channel of I/O object.
@@ -428,7 +428,7 @@ public final class NetRequester {
 	 * @param errorStatus The message processing error status (required, not null).
 	 * @throws IllegalArgumentException An error will be thrown when one of the parameters "source", "type" or "request" is null.
 	 */
-	private void publishErrorEvent(NetMessageDirection direction, NetIO<?, ?> messageIO, NetData requestData, NetData responseData, Exception[] exceptions, NetMessageStatus errorStatus) throws IllegalArgumentException {
+	private final void publishErrorEvent(NetMessageDirection direction, NetIO<?, ?> messageIO, NetData requestData, NetData responseData, Exception[] exceptions, NetMessageStatus errorStatus) throws IllegalArgumentException {
 		// Get event factory and publisher.
 		NetEventFactory factory = messageIO.getService().getEventFactory();
 		BusEventPublisher publisher = IoTFramework.getBusEventPublisher();

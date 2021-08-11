@@ -2,11 +2,15 @@ package org.iotcity.iot.framework.net.channel;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.iotcity.iot.framework.IoTFramework;
 import org.iotcity.iot.framework.core.bus.BusEventPublisher;
+import org.iotcity.iot.framework.core.i18n.LocaleText;
+import org.iotcity.iot.framework.core.logging.Logger;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
-import org.iotcity.iot.framework.net.FrameworkNet;
+import org.iotcity.iot.framework.core.util.task.PriorityRunnable;
+import org.iotcity.iot.framework.core.util.task.TaskHandler;
 import org.iotcity.iot.framework.net.config.NetConfigInbound;
 import org.iotcity.iot.framework.net.config.NetConfigOutbound;
 import org.iotcity.iot.framework.net.event.NetChannelEvent;
@@ -44,9 +48,25 @@ public abstract class NetChannelHandler implements NetChannel {
 	 * The default value for sending idle timeout in milliseconds.
 	 */
 	public static final long CONST_SENDING_IDLE_TIMEOUT = 0;
+	/**
+	 * The default value for channel reopen options.
+	 */
+	public static final boolean CONST_REOPEN_ON_CLOSED = false;
+	/**
+	 * The default value for delayed time in milliseconds for automatically reopen the channel after channel closing.
+	 */
+	public static final long CONST_REOPEN_ON_CLOSED_DELAY = 5000;
 
 	// --------------------------- Protected fields ----------------------------
 
+	/**
+	 * The logger object for this channel.
+	 */
+	protected final Logger logger;
+	/**
+	 * The locale text object for this channel.
+	 */
+	protected final LocaleText locale;
 	/**
 	 * Network channel service handler.
 	 */
@@ -69,26 +89,46 @@ public abstract class NetChannelHandler implements NetChannel {
 	/**
 	 * Indicates whether to use multithreading to process request and response data when allowed (false by default).
 	 */
-	protected boolean multithreading = CONST_MULTITHREADING;
+	private boolean multithreading = CONST_MULTITHREADING;
 	/**
 	 * The thread execution priority of this channel (0 by default, the higher the value, the higher the priority, the higher value will be executed first).
 	 */
-	protected int multithreadingPriority = CONST_MULTITHREADING_PRIORITY;
+	private int multithreadingPriority = CONST_MULTITHREADING_PRIORITY;
 	/**
 	 * The default timeout value in milliseconds that waiting for a response data callback (120000 ms by default).
 	 */
-	protected long defaultCallbackTimeout = CONST_CALLBACK_TIMEOUT;
+	private long defaultCallbackTimeout = CONST_CALLBACK_TIMEOUT;
 	/**
 	 * If no data is received within the specified idle time in milliseconds, the channel will be closed (0 by default, when it is set to 0, this option is disabled).
 	 */
-	protected long receivingIdleTimeout = CONST_RECEIVING_IDLE_TIMEOUT;
+	private long receivingIdleTimeout = CONST_RECEIVING_IDLE_TIMEOUT;
 	/**
 	 * If no data is sent within the specified idle time in milliseconds, the channel will be closed (0 by default, when it is set to 0, this option is disabled).
 	 */
-	protected long sendingIdleTimeout = CONST_SENDING_IDLE_TIMEOUT;
+	private long sendingIdleTimeout = CONST_SENDING_IDLE_TIMEOUT;
+	/**
+	 * Indicates whether reopen the client channel after channel closing (false by default).
+	 */
+	private boolean reopenOnClosed = CONST_REOPEN_ON_CLOSED;
+	/**
+	 * The delayed time in milliseconds for automatically reopen the client channel after channel closing (5000 ms by default, the value must be greater than 0).
+	 */
+	private long reopenOnClosedDelay = CONST_REOPEN_ON_CLOSED_DELAY;
 
 	// --------------------------- Private fields ----------------------------
 
+	/**
+	 * Indicates whether this channel is a client channel.
+	 */
+	private final boolean client;
+	/**
+	 * The create time of current channel in milliseconds.
+	 */
+	private final long createTime;
+	/**
+	 * The reopen task ID.
+	 */
+	private final AtomicLong reopenTaskID = new AtomicLong(0);
 	/**
 	 * The inbounds and outbounds lock for the map.
 	 */
@@ -106,9 +146,9 @@ public abstract class NetChannelHandler implements NetChannel {
 	 */
 	private NetResponser responser;
 	/**
-	 * The create time of current channel in milliseconds.
+	 * Indicates whether this channel has been destroyed.
 	 */
-	private final long createTime;
+	private boolean destroyed = false;
 	/**
 	 * The open time of current channel in milliseconds.
 	 */
@@ -136,14 +176,18 @@ public abstract class NetChannelHandler implements NetChannel {
 	 * Constructor for network channel handler.
 	 * @param service Network channel service handler (required, not null).
 	 * @param channelID Network channel unique identification (required, not null).
+	 * @param isClient Indicates whether this channel is a client channel.
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "service" or "channelID" is null or empty.
 	 */
-	public NetChannelHandler(NetServiceHandler service, String channelID) throws IllegalArgumentException {
+	protected NetChannelHandler(NetServiceHandler service, String channelID, boolean isClient) throws IllegalArgumentException {
 		if (service == null || StringHelper.isEmpty(channelID)) {
 			throw new IllegalArgumentException("Parameter service and channelID can not be null or empty!");
 		}
+		this.logger = service.logger;
+		this.locale = service.locale;
 		this.service = service;
 		this.channelID = channelID;
+		this.client = isClient;
 		this.createTime = System.currentTimeMillis();
 		// Publish created event.
 		NetEventFactory factory = service.getEventFactory();
@@ -154,7 +198,7 @@ public abstract class NetChannelHandler implements NetChannel {
 	// --------------------------- Override methods ----------------------------
 
 	@Override
-	public boolean config(NetChannelOptions data, boolean reset) {
+	public final boolean config(NetChannelOptions data, boolean reset) {
 		// Returns true if there is no options data.
 		if (data == null) return true;
 
@@ -170,6 +214,8 @@ public abstract class NetChannelHandler implements NetChannel {
 		defaultCallbackTimeout = data.defaultCallbackTimeout > 0 ? data.defaultCallbackTimeout : CONST_CALLBACK_TIMEOUT;
 		receivingIdleTimeout = data.receivingIdleTimeout > 0 ? data.receivingIdleTimeout : CONST_RECEIVING_IDLE_TIMEOUT;
 		sendingIdleTimeout = data.sendingIdleTimeout > 0 ? data.sendingIdleTimeout : CONST_SENDING_IDLE_TIMEOUT;
+		reopenOnClosed = client && data.reopenOnClosed;
+		reopenOnClosedDelay = data.reopenOnClosedDelay > 0 ? data.reopenOnClosedDelay : CONST_REOPEN_ON_CLOSED_DELAY;
 
 		// Setup inbounds.
 		NetConfigInbound[] ins = data.inbounds;
@@ -179,7 +225,7 @@ public abstract class NetChannelHandler implements NetChannel {
 				try {
 					this.addInbound(IoTFramework.getInstance(config.instance), config.priority);
 				} catch (Exception e) {
-					FrameworkNet.getLogger().error(e);
+					logger.error(e);
 					return false;
 				}
 			}
@@ -193,7 +239,7 @@ public abstract class NetChannelHandler implements NetChannel {
 				try {
 					this.addOutbound(IoTFramework.getInstance(config.instance), config.priority);
 				} catch (Exception e) {
-					FrameworkNet.getLogger().error(e);
+					logger.error(e);
 					return false;
 				}
 			}
@@ -204,94 +250,114 @@ public abstract class NetChannelHandler implements NetChannel {
 	}
 
 	@Override
-	public NetService getService() {
+	public final NetService getService() {
 		return service;
 	}
 
 	@Override
-	public String getChannelID() {
+	public final String getChannelID() {
 		return channelID;
 	}
 
 	@Override
-	public boolean isMultithreading() {
+	public final boolean isClient() {
+		return client;
+	}
+
+	@Override
+	public final boolean isMultithreading() {
 		return multithreading;
 	}
 
 	@Override
-	public int getMultithreadingPriority() {
+	public final int getMultithreadingPriority() {
 		return multithreadingPriority;
 	}
 
 	@Override
-	public long getDefaultCallbackTimeout() {
+	public final long getDefaultCallbackTimeout() {
 		return defaultCallbackTimeout;
 	}
 
 	@Override
-	public long getReceivingIdleTimeout() {
+	public final long getReceivingIdleTimeout() {
 		return receivingIdleTimeout;
 	}
 
 	@Override
-	public long getSendingIdleTimeout() {
+	public final long getSendingIdleTimeout() {
 		return sendingIdleTimeout;
 	}
 
 	@Override
-	public NetChannelState getState() {
+	public final boolean isReopenOnClosed() {
+		return reopenOnClosed;
+	}
+
+	@Override
+	public final long getReopenOnClosedDelay() {
+		return reopenOnClosedDelay;
+	}
+
+	@Override
+	public final NetChannelState getState() {
 		return state;
 	}
 
 	@Override
-	public boolean isOpened() {
+	public final boolean isOpened() {
 		return state == NetChannelState.OPENED;
 	}
 
 	@Override
-	public boolean isClosed() {
+	public final boolean isClosed() {
 		return state == NetChannelState.CLOSED;
 	}
 
 	@Override
-	public long getCreateTime() {
+	public final boolean isDestroyed() {
+		return destroyed;
+	}
+
+	@Override
+	public final long getCreateTime() {
 		return createTime;
 	}
 
 	@Override
-	public long getOpenTime() {
+	public final long getOpenTime() {
 		return openTime;
 	}
 
 	@Override
-	public long getCloseTime() {
+	public final long getCloseTime() {
 		return closeTime;
 	}
 
 	@Override
-	public long getMessageTime() {
+	public final long getMessageTime() {
 		return messageTime;
 	}
 
 	@Override
-	public long getSentTime() {
+	public final long getSentTime() {
 		return sentTime;
 	}
 
 	@Override
-	public void updateMessageTime() {
+	public final void updateMessageTime() {
 		messageTime = System.currentTimeMillis();
 		service.updateMessageTime(this, messageTime);
 	}
 
 	@Override
-	public void updateSentTime() {
+	public final void updateSentTime() {
 		sentTime = System.currentTimeMillis();
 		service.updateSentTime(this, sentTime);
 	}
 
 	@Override
-	public NetResponser getResponser() {
+	public final NetResponser getResponser() {
 		if (responser != null) return responser;
 		synchronized (boundsLock) {
 			if (responser != null) return responser;
@@ -301,17 +367,17 @@ public abstract class NetChannelHandler implements NetChannel {
 	}
 
 	@Override
-	public long fixCallbackTimeout(long timeout) {
+	public final long fixCallbackTimeout(long timeout) {
 		return timeout <= 0 ? defaultCallbackTimeout : timeout;
 	}
 
 	@Override
-	public void setStoreData(Object data) {
+	public final void setStoreData(Object data) {
 		storedData = data;
 	}
 
 	@Override
-	public <T> T getStoreData() {
+	public final <T> T getStoreData() {
 		@SuppressWarnings("unchecked")
 		T data = (T) storedData;
 		return data;
@@ -320,7 +386,7 @@ public abstract class NetChannelHandler implements NetChannel {
 	// --------------------------- Inbound and outbound methods ----------------------------
 
 	@Override
-	public void addInbound(NetInbound<?, ?> inbound, int priority) {
+	public final void addInbound(NetInbound<?, ?> inbound, int priority) {
 		if (inbound == null) return;
 		if (inbounds == null) {
 			synchronized (boundsLock) {
@@ -343,21 +409,21 @@ public abstract class NetChannelHandler implements NetChannel {
 	}
 
 	@Override
-	public void removeInbound(NetInbound<?, ?> inbound) {
+	public final void removeInbound(NetInbound<?, ?> inbound) {
 		if (inbound == null || inbounds == null) return;
 		NetInboundContext context = inbounds.get(inbound.getIOClass());
 		if (context != null) context.remove(inbound);
 	}
 
 	@Override
-	public NetInboundObject[] getInbounds(Class<?> netIOClass) {
+	public final NetInboundObject[] getInbounds(Class<?> netIOClass) {
 		if (inbounds == null) return null;
 		NetInboundContext context = inbounds.get(netIOClass);
 		return context == null ? null : context.getInbounds();
 	}
 
 	@Override
-	public void clearInbounds() {
+	public final void clearInbounds() {
 		if (inbounds == null) return;
 		synchronized (inbounds) {
 			inbounds.clear();
@@ -365,7 +431,7 @@ public abstract class NetChannelHandler implements NetChannel {
 	}
 
 	@Override
-	public void addOutbound(NetOutbound<?, ?> outbound, int priority) {
+	public final void addOutbound(NetOutbound<?, ?> outbound, int priority) {
 		if (outbound == null) return;
 		if (outbounds == null) {
 			synchronized (boundsLock) {
@@ -388,21 +454,21 @@ public abstract class NetChannelHandler implements NetChannel {
 	}
 
 	@Override
-	public void removeOutbound(NetOutbound<?, ?> outbound) {
+	public final void removeOutbound(NetOutbound<?, ?> outbound) {
 		if (outbound == null || outbounds == null) return;
 		NetOutboundContext context = outbounds.get(outbound.getIOClass());
 		if (context != null) context.remove(outbound);
 	}
 
 	@Override
-	public NetOutboundObject[] getOutbounds(Class<?> netIOClass) {
+	public final NetOutboundObject[] getOutbounds(Class<?> netIOClass) {
 		if (outbounds == null) return null;
 		NetOutboundContext context = outbounds.get(netIOClass);
 		return context == null ? null : context.getOutbounds();
 	}
 
 	@Override
-	public void clearOutbounds() {
+	public final void clearOutbounds() {
 		if (outbounds == null) return;
 		synchronized (outbounds) {
 			outbounds.clear();
@@ -413,27 +479,63 @@ public abstract class NetChannelHandler implements NetChannel {
 
 	@Override
 	public boolean open() throws Exception {
+		if (service.isStopped()) return false;
 		if (state == NetChannelState.OPENED) return true;
 		synchronized (stateLock) {
 			if (state == NetChannelState.OPENED) return true;
+
+			// Logs a message.
+			logger.info(locale.text("net.service.channel.opening", channelID, service.serviceID));
 
 			// Publish opening event.
 			NetEventFactory factory = service.getEventFactory();
 			BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
 			NetChannelEvent event = factory.createChannelEvent(this, this, NetChannelState.OPENING);
-			if (publisher.publish(event).isCancelled()) return false;
+			if (publisher.publish(event).isCancelled()) {
+				logger.warn(locale.text("net.service.channel.opening.cancelled", channelID, service.serviceID));
+				return false;
+			}
 
 			// Reset to created state after closing.
 			if (state == NetChannelState.CLOSED) state = NetChannelState.CREATED;
-			// Do open logic.
-			if (!doOpen()) return false;
+			// Reset destroyed status.
+			if (destroyed) destroyed = false;
+
+			try {
+				// Do open logic.
+				if (!doOpen()) {
+					// Logs a message.
+					logger.warn(locale.text("net.service.channel.open.failed", channelID, service.serviceID));
+					// Retry opening this channel.
+					retryOpen();
+					// Return false at this time.
+					return false;
+				}
+			} catch (Exception e) {
+				// Logs a message.
+				logger.error(locale.text("net.service.channel.open.err", channelID, service.serviceID, e.getMessage()), e);
+				// Retry opening this channel.
+				retryOpen();
+				// Return false at this time.
+				return false;
+			}
+
+			// Set opened state.
 			state = NetChannelState.OPENED;
 			openTime = System.currentTimeMillis();
 			// Add channel to service
-			service.addChannel(this);
+			if (service.addChannel(this)) {
+				// Logs a message.
+				logger.info(locale.text("net.service.channel.open.success", channelID, service.serviceID));
+				// Publish opened event.
+				publisher.publish(factory.createChannelEvent(this, this, NetChannelState.OPENED));
+			} else {
+				// Logs a message.
+				logger.warn(locale.text("net.service.channel.addion.failed", channelID, service.serviceID));
+				// Close the channel after adding failure.
+				this.close();
+			}
 
-			// Publish opened event.
-			publisher.publish(factory.createChannelEvent(this, this, NetChannelState.OPENED));
 		}
 		// Return opened successfully.
 		return true;
@@ -445,23 +547,43 @@ public abstract class NetChannelHandler implements NetChannel {
 		synchronized (stateLock) {
 			if (state == NetChannelState.CLOSED) return true;
 
+			// Logs a message.
+			logger.info(locale.text("net.service.channel.closing", channelID, service.serviceID));
+
 			// Publish closing event.
 			NetEventFactory factory = service.getEventFactory();
 			BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
 			NetChannelEvent event = factory.createChannelEvent(this, this, NetChannelState.CLOSING);
-			if (publisher.publish(event).isCancelled()) return false;
+			if (publisher.publish(event).isCancelled()) {
+				logger.warn(locale.text("net.service.channel.closing.cancelled", channelID, service.serviceID));
+				return false;
+			}
 
-			// Callback response on closing.
-			if (responser != null) responser.callbackOnClosing();
-			// Do close logic.
-			if (!doClose()) return false;
+			try {
+				// Do close logic.
+				if (!doClose()) {
+					logger.warn(locale.text("net.service.channel.close.failed", channelID, service.serviceID));
+					return false;
+				}
+			} catch (Exception e) {
+				logger.error(locale.text("net.service.channel.close.err", channelID, service.serviceID, e.getMessage()), e);
+				return false;
+			}
+
+			// Set close state.
 			state = NetChannelState.CLOSED;
 			closeTime = System.currentTimeMillis();
-			// Remove channel from service.
-			service.removeChannel(channelID);
+			if (responser != null && !reopenOnClosed) responser.callbackOnClosing();
+			service.removeChannel(this);
 
+			// Logs a message.
+			logger.info(locale.text("net.service.channel.close.success", channelID, service.serviceID));
 			// Publish closed event.
 			publisher.publish(factory.createChannelEvent(this, this, NetChannelState.CLOSED));
+
+			// Retry opening this channel.
+			retryOpen();
+
 		}
 		// Return closed successfully.
 		return true;
@@ -469,21 +591,46 @@ public abstract class NetChannelHandler implements NetChannel {
 
 	@Override
 	public void destroy() {
-		if (state == NetChannelState.CLOSED) return;
+		if (destroyed) return;
 		synchronized (stateLock) {
-			if (state == NetChannelState.CLOSED) return;
-			// Callback response on closing.
-			if (responser != null) responser.callbackOnClosing();
-			// Do close logic.
-			try {
-				doClose();
-			} catch (Exception e) {
-				FrameworkNet.getLogger().error(e);
+			if (destroyed) return;
+
+			// Logs a message.
+			logger.info(locale.text("net.service.channel.destroying", channelID, service.serviceID));
+
+			// Check for close state.
+			if (state != NetChannelState.CLOSED) {
+
+				try {
+					// Do close logic.
+					if (!doClose()) {
+						logger.warn(locale.text("net.service.channel.close.failed", channelID, service.serviceID));
+					} else {
+						logger.info(locale.text("net.service.channel.close.success", channelID, service.serviceID));
+					}
+				} catch (Exception e) {
+					logger.error(locale.text("net.service.channel.close.err", channelID, service.serviceID, e.getMessage()), e);
+				}
+
+				// Set close state.
+				state = NetChannelState.CLOSED;
+				closeTime = System.currentTimeMillis();
+				if (responser != null) responser.callbackOnClosing();
+				service.removeChannel(this);
+				// Publish closed event.
+				IoTFramework.getBusEventPublisher().publish(service.getEventFactory().createChannelEvent(this, this, NetChannelState.CLOSED));
+
 			}
-			state = NetChannelState.CLOSED;
-			closeTime = System.currentTimeMillis();
-			// Remove channel from service.
-			service.removeChannel(channelID);
+
+			// Set destroyed status.
+			destroyed = true;
+			// Gets the reopen task ID.
+			long taskID = reopenTaskID.getAndSet(0);
+			// Remove the reopen task.
+			if (taskID > 0) TaskHandler.getDefaultHandler().remove(taskID);
+			// Logs a message.
+			logger.info(locale.text("net.service.channel.destroyed", channelID, service.serviceID));
+
 		}
 	}
 
@@ -502,19 +649,52 @@ public abstract class NetChannelHandler implements NetChannel {
 		if (receiving || sending) {
 			// Output message.
 			if (receiving) {
-				FrameworkNet.getLogger().info(FrameworkNet.getLocale().text("net.message.recv.idle", receivingIdleTimeout, channelID, messageTime, getClass().getName()));
+				logger.warn(locale.text("net.service.channel.recv.idle", receivingIdleTimeout, channelID, service.serviceID, messageTime, getClass().getName()));
 			}
 			if (sending) {
-				FrameworkNet.getLogger().info(FrameworkNet.getLocale().text("net.message.send.idle", sendingIdleTimeout, channelID, sentTime, getClass().getName()));
+				logger.warn(locale.text("net.service.channel.send.idle", sendingIdleTimeout, channelID, service.serviceID, sentTime, getClass().getName()));
 			}
 			// Close this channel.
 			try {
 				close();
 			} catch (Exception e) {
-				FrameworkNet.getLogger().error(e);
+				logger.error(e);
 			}
 		}
 
+	}
+
+	/**
+	 * Retry opening this channel.
+	 */
+	private final void retryOpen() {
+		// Check reopen conditions.
+		if (!reopenOnClosed || destroyed || service.isStopped() || reopenTaskID.get() > 0) return;
+		// Logs a message.
+		logger.info(locale.text("net.service.channel.open.retry", reopenOnClosedDelay, channelID, service.serviceID));
+		// Reopen this channel.
+		reopenTaskID.set(TaskHandler.getDefaultHandler().addDelayTask(new PriorityRunnable() {
+
+			@Override
+			public void run() {
+				// Reset task ID
+				reopenTaskID.set(0);
+				synchronized (stateLock) {
+					// Check status.
+					if (destroyed || service.isStopped()) return;
+				}
+				// Logs a message.
+				logger.info(locale.text("net.service.channel.reopening", channelID, service.serviceID));
+				try {
+					// Do reopen logic.
+					doReopen();
+				} catch (Exception e) {
+					// Logs a message.
+					logger.error(locale.text("net.service.channel.reopening.err", channelID, service.serviceID, e.getMessage()), e);
+				}
+			}
+
+		}, reopenOnClosedDelay));
 	}
 
 	// --------------------------- Abstract methods ----------------------------
@@ -525,6 +705,13 @@ public abstract class NetChannelHandler implements NetChannel {
 	 * @throws Exception An error will be thrown when an exception is encountered during execution.
 	 */
 	protected abstract boolean doOpen() throws Exception;
+
+	/**
+	 * Do reopen channel processing logic (you can call open() in this method).
+	 * @return Returns whether the channel was successfully opened.
+	 * @throws Exception An error will be thrown when an exception is encountered during execution.
+	 */
+	protected abstract boolean doReopen() throws Exception;
 
 	/**
 	 * Do close channel processing logic.

@@ -60,7 +60,7 @@ public final class NetInboundContext {
 	 * @param inbound Network inbound message processing object (not null).
 	 * @param priority Inbound message processing priority (the priority with the highest value is called first, 0 by default).
 	 */
-	void add(NetInbound<?, ?> inbound, int priority) {
+	final void add(NetInbound<?, ?> inbound, int priority) {
 		Class<?> clazz = inbound.getClass();
 		synchronized (lock) {
 			if (classes.contains(clazz)) return;
@@ -74,7 +74,7 @@ public final class NetInboundContext {
 	 * Remove an inbound object from context.
 	 * @param inbound Network inbound message processing object (not null).
 	 */
-	void remove(NetInbound<?, ?> inbound) {
+	final void remove(NetInbound<?, ?> inbound) {
 		synchronized (lock) {
 			Iterator<NetInboundObject> iterator = list.iterator();
 			while (iterator.hasNext()) {
@@ -93,7 +93,7 @@ public final class NetInboundContext {
 	 * Get inbound objects from context (returns null if there is no inbound in this context).
 	 * @return Inbound objects in this context.
 	 */
-	NetInboundObject[] getInbounds() {
+	final NetInboundObject[] getInbounds() {
 		if (modified) {
 			synchronized (lock) {
 				if (modified) {

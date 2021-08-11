@@ -69,26 +69,57 @@ public interface NetService extends Configurable<NetServiceOptions> {
 	long getSentTime();
 
 	/**
-	 * Gets a channel by a specified channel ID (returns null if the channel does not exists in this service).
-	 * @param channelID The channel unique identification.
+	 * Add a network client to this service, the client will be opened automatically after the service is started.<br/>
+	 * <b>Note: this method is only valid for client channels.</b>
+	 * @param channel The network client channel object (required, can not be null).
+	 */
+	void addClient(NetChannel channel);
+
+	/**
+	 * Gets a client by a specified channel ID (returns null if the client channel does not exists in this service).
+	 * @param channelID The channel unique identification (required, can not be null or empty).
+	 * @return A network client channel object or null.
+	 */
+	NetChannel getClient(String channelID);
+
+	/**
+	 * Remove a client channel from this service (returns null if the client channel does not exists in this service).
+	 * @param channelID The channel unique identification (required, can not be null or empty).
+	 * @return A network client channel object that has been removed or null value if the client channel does not exists in this service.
+	 */
+	NetChannel removeClient(String channelID);
+
+	/**
+	 * Gets all clients in this service (returns not null).
+	 */
+	NetChannel[] getClients();
+
+	/**
+	 * Gets the size of clients in this service.
+	 */
+	int getClientSize();
+
+	/**
+	 * Gets a channel that has been opened by a specified channel ID (returns null if the channel does not exists in this service).
+	 * @param channelID The channel unique identification (required, can not be null or empty).
 	 * @return A network channel object or null.
 	 */
 	NetChannel getChannel(String channelID);
 
 	/**
-	 * Filter and get channel objects (returns not null).
-	 * @param filter The channel filter object.
+	 * Filter and get channels that has been opened (returns not null).
+	 * @param filter The channel filter object (required, can not be null).
 	 * @return Array of channel objects that meet the filtering conditions.
 	 */
 	NetChannel[] filterChannels(NetChannelFilter filter);
 
 	/**
-	 * Gets all channels in this service (returns not null).
+	 * Gets all channels that has been opened in this service (returns not null).
 	 */
 	NetChannel[] getChannels();
 
 	/**
-	 * Gets the channel size in this service.
+	 * Gets the size of channels that has been opened in this service.
 	 */
 	int getChannelSize();
 

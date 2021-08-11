@@ -29,7 +29,7 @@ public abstract class NetResponseCallback<RES extends NetDataResponse> {
 	 * @throws Exception Throw an exception when an error is encountered.
 	 */
 	@SuppressWarnings("unchecked")
-	public void callbackResponse(NetIO<?, ?> io, NetMessageStatus status, NetDataResponse response) throws Exception {
+	public final void callbackResponse(NetIO<?, ?> io, NetMessageStatus status, NetDataResponse response) throws Exception {
 		callbackResult(new NetResponseResult<RES>(io, status, (RES) response));
 	}
 
@@ -51,7 +51,7 @@ public abstract class NetResponseCallback<RES extends NetDataResponse> {
 	/**
 	 * Gets the response result object (returns null if the callback is not executed).
 	 */
-	public NetResponseResult<RES> getResult() {
+	public final NetResponseResult<RES> getResult() {
 		return result;
 	}
 

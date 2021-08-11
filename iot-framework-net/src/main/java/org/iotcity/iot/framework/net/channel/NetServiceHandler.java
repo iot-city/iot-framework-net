@@ -9,6 +9,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.iotcity.iot.framework.IoTFramework;
 import org.iotcity.iot.framework.core.bus.BusEventPublisher;
 import org.iotcity.iot.framework.core.config.PropertiesConfigFile;
+import org.iotcity.iot.framework.core.i18n.LocaleText;
+import org.iotcity.iot.framework.core.logging.Logger;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
 import org.iotcity.iot.framework.core.util.task.PriorityRunnable;
 import org.iotcity.iot.framework.core.util.task.TaskHandler;
@@ -38,6 +40,14 @@ public abstract class NetServiceHandler implements NetService {
 	// --------------------------- Protected fields ----------------------------
 
 	/**
+	 * The logger object for this service.
+	 */
+	protected final Logger logger = FrameworkNet.getLogger();
+	/**
+	 * The locale text object for this service.
+	 */
+	protected final LocaleText locale = FrameworkNet.getLocale();
+	/**
 	 * The net manager object.
 	 */
 	protected final NetManager manager;
@@ -64,6 +74,10 @@ public abstract class NetServiceHandler implements NetService {
 	// --------------------------- Private fields ----------------------------
 
 	/**
+	 * The network clients thread safe map (the key is channel ID, the value is channel object).
+	 */
+	private final Map<String, NetChannel> clients = new ConcurrentHashMap<>();
+	/**
 	 * The network channels thread safe map (the key is channel ID, the value is channel object).
 	 */
 	private final Map<String, NetChannel> channels = new ConcurrentHashMap<>();
@@ -78,7 +92,7 @@ public abstract class NetServiceHandler implements NetService {
 	/**
 	 * The lock for channels changed.
 	 */
-	private Object channelLock = new Object();
+	private final Object channelLock = new Object();
 
 	/**
 	 * The inbounds map (the key is NetIO class, the value is inbound context object).
@@ -141,7 +155,7 @@ public abstract class NetServiceHandler implements NetService {
 	 * @param serviceID The service unique identification (required, can not be or empty).
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "manager" or "serviceID" is null or empty.
 	 */
-	public NetServiceHandler(NetManager manager, String serviceID) throws IllegalArgumentException {
+	protected NetServiceHandler(NetManager manager, String serviceID) throws IllegalArgumentException {
 		if (manager == null || StringHelper.isEmpty(serviceID)) {
 			throw new IllegalArgumentException("Parameter manager and serviceID can not be null or empty!");
 		}
@@ -157,7 +171,7 @@ public abstract class NetServiceHandler implements NetService {
 	// --------------------------- Override methods ----------------------------
 
 	@Override
-	public boolean config(NetServiceOptions data, boolean reset) {
+	public final boolean config(NetServiceOptions data, boolean reset) {
 		// Returns true if there is no options data.
 		if (data == null) return true;
 
@@ -190,7 +204,7 @@ public abstract class NetServiceHandler implements NetService {
 				try {
 					this.addInbound(IoTFramework.getInstance(config.instance), config.priority);
 				} catch (Exception e) {
-					FrameworkNet.getLogger().error(e);
+					logger.error(e);
 					return false;
 				}
 			}
@@ -204,80 +218,132 @@ public abstract class NetServiceHandler implements NetService {
 				try {
 					this.addOutbound(IoTFramework.getInstance(config.instance), config.priority);
 				} catch (Exception e) {
-					FrameworkNet.getLogger().error(e);
+					logger.error(e);
 					return false;
 				}
 			}
 		}
 
 		// Return configuration result.
-		return this.doConfig(data.config);
+		return this.doConfig(data.config, reset);
 	}
 
 	@Override
-	public NetManager getNetManager() {
+	public final NetManager getNetManager() {
 		return manager;
 	}
 
 	@Override
-	public String getServiceID() {
+	public final String getServiceID() {
 		return serviceID;
 	}
 
 	@Override
-	public long getMonitoringInterval() {
+	public final long getMonitoringInterval() {
 		return monitoringInterval;
 	}
 
 	@Override
-	public NetServiceState getState() {
+	public final NetServiceState getState() {
 		return state;
 	}
 
 	@Override
-	public boolean isStarted() {
+	public final boolean isStarted() {
 		return state == NetServiceState.STARTED;
 	}
 
 	@Override
-	public boolean isStopped() {
+	public final boolean isStopped() {
 		return state == NetServiceState.STOPPED;
 	}
 
 	@Override
-	public long getCreateTime() {
+	public final long getCreateTime() {
 		return createTime;
 	}
 
 	@Override
-	public long getStartTime() {
+	public final long getStartTime() {
 		return startTime;
 	}
 
 	@Override
-	public long getStopTime() {
+	public final long getStopTime() {
 		return stopTime;
 	}
 
 	@Override
-	public long getMessageTime() {
+	public final long getMessageTime() {
 		return messageTime;
 	}
 
 	@Override
-	public long getSentTime() {
+	public final long getSentTime() {
 		return sentTime;
+	}
+
+	// --------------------------- Client methods ----------------------------
+
+	@Override
+	public final void addClient(NetChannel channel) {
+		if (channel == null || !channel.isClient()) return;
+
+		// Add to the clients map.
+		NetChannel removed = clients.put(channel.getChannelID(), channel);
+
+		// Close removed client.
+		if (removed != null && removed != channel) {
+			try {
+				removed.close();
+			} catch (Exception e) {
+				logger.error(e);
+			}
+		}
+
+		// Open the client automatically.
+		if (this.isStarted()) {
+			try {
+				channel.open();
+			} catch (Exception e) {
+				logger.error(locale.text("net.service.client.open.err", serviceID, channel.getChannelID(), e.getMessage()), e);
+			}
+		}
+	}
+
+	@Override
+	public final NetChannel getClient(String channelID) {
+		if (StringHelper.isEmpty(channelID)) return null;
+		return clients.get(channelID);
+	}
+
+	@Override
+	public final NetChannel removeClient(String channelID) {
+		if (StringHelper.isEmpty(channelID)) return null;
+		return clients.remove(channelID);
+	}
+
+	@Override
+	public final NetChannel[] getClients() {
+		return clients.values().toArray(new NetChannel[channels.size()]);
+	}
+
+	@Override
+	public final int getClientSize() {
+		return clients.size();
 	}
 
 	// --------------------------- Channel methods ----------------------------
 
 	@Override
-	public NetChannel getChannel(String channelID) {
+	public final NetChannel getChannel(String channelID) {
+		if (StringHelper.isEmpty(channelID)) return null;
 		return channels.get(channelID);
 	}
 
 	@Override
-	public NetChannel[] filterChannels(NetChannelFilter filter) {
+	public final NetChannel[] filterChannels(NetChannelFilter filter) {
+		if (filter == null) return new NetChannel[0];
 		List<NetChannel> list = new ArrayList<>();
 		NetChannel[] channels = getChannels();
 		for (NetChannel channel : channels) {
@@ -287,7 +353,7 @@ public abstract class NetServiceHandler implements NetService {
 	}
 
 	@Override
-	public NetChannel[] getChannels() {
+	public final NetChannel[] getChannels() {
 		if (channelChanged) {
 			synchronized (channelLock) {
 				if (channelChanged) {
@@ -300,14 +366,14 @@ public abstract class NetServiceHandler implements NetService {
 	}
 
 	@Override
-	public int getChannelSize() {
+	public final int getChannelSize() {
 		return channels.size();
 	}
 
 	// --------------------------- Inbound and outbound methods ----------------------------
 
 	@Override
-	public void addInbound(NetInbound<?, ?> inbound, int priority) {
+	public final void addInbound(NetInbound<?, ?> inbound, int priority) {
 		if (inbound == null) return;
 		NetInboundContext context = inbounds.get(inbound.getIOClass());
 		if (context == null) {
@@ -323,27 +389,27 @@ public abstract class NetServiceHandler implements NetService {
 	}
 
 	@Override
-	public void removeInbound(NetInbound<?, ?> inbound) {
+	public final void removeInbound(NetInbound<?, ?> inbound) {
 		if (inbound == null) return;
 		NetInboundContext context = inbounds.get(inbound.getIOClass());
 		if (context != null) context.remove(inbound);
 	}
 
 	@Override
-	public NetInboundObject[] getInbounds(Class<?> netIOClass) {
+	public final NetInboundObject[] getInbounds(Class<?> netIOClass) {
 		NetInboundContext context = inbounds.get(netIOClass);
 		return context == null ? null : context.getInbounds();
 	}
 
 	@Override
-	public void clearInbounds() {
+	public final void clearInbounds() {
 		synchronized (inbounds) {
 			inbounds.clear();
 		}
 	}
 
 	@Override
-	public void addOutbound(NetOutbound<?, ?> outbound, int priority) {
+	public final void addOutbound(NetOutbound<?, ?> outbound, int priority) {
 		if (outbound == null) return;
 		NetOutboundContext context = outbounds.get(outbound.getIOClass());
 		if (context == null) {
@@ -359,20 +425,20 @@ public abstract class NetServiceHandler implements NetService {
 	}
 
 	@Override
-	public void removeOutbound(NetOutbound<?, ?> outbound) {
+	public final void removeOutbound(NetOutbound<?, ?> outbound) {
 		if (outbound == null) return;
 		NetOutboundContext context = outbounds.get(outbound.getIOClass());
 		if (context != null) context.remove(outbound);
 	}
 
 	@Override
-	public NetOutboundObject[] getOutbounds(Class<?> netIOClass) {
+	public final NetOutboundObject[] getOutbounds(Class<?> netIOClass) {
 		NetOutboundContext context = outbounds.get(netIOClass);
 		return context == null ? null : context.getOutbounds();
 	}
 
 	@Override
-	public void clearOutbounds() {
+	public final void clearOutbounds() {
 		synchronized (outbounds) {
 			outbounds.clear();
 		}
@@ -386,16 +452,33 @@ public abstract class NetServiceHandler implements NetService {
 		synchronized (stateLock) {
 			if (state == NetServiceState.STARTED) return true;
 
+			// Logs a message.
+			logger.info(locale.text("net.service.starting", serviceID));
+
 			// Publish starting event.
 			NetEventFactory factory = this.getEventFactory();
 			BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
 			NetServiceEvent event = factory.createServiceEvent(this, this, NetServiceState.STARTING);
-			if (publisher.publish(event).isCancelled()) return false;
+			if (publisher.publish(event).isCancelled()) {
+				logger.warn(locale.text("net.service.starting.cancelled", serviceID));
+				return false;
+			}
 
 			// Reset to created state after stopping.
 			if (state == NetServiceState.STOPPED) state = NetServiceState.CREATED;
-			// Do start logic.
-			if (!doStart()) return false;
+
+			try {
+				// Do start logic.
+				if (!doStart()) {
+					logger.warn(locale.text("net.service.start.failed", serviceID));
+					return false;
+				}
+			} catch (Exception e) {
+				logger.error(locale.text("net.service.start.err", serviceID, e.getMessage()), e);
+				return false;
+			}
+
+			// Set started state.
 			state = NetServiceState.STARTED;
 			startTime = System.currentTimeMillis();
 
@@ -404,9 +487,29 @@ public abstract class NetServiceHandler implements NetService {
 			if (monitoringTaskID > 0) handler.remove(monitoringTaskID);
 			monitoringTaskID = handler.addIntervalTask(monitoringTask, monitoringInterval, monitoringInterval);
 
+			// Logs a message.
+			logger.info(locale.text("net.service.start.success", serviceID));
 			// Publish started event.
 			publisher.publish(factory.createServiceEvent(this, this, NetServiceState.STARTED));
+
 		}
+
+		// Check client size.
+		if (clients.size() > 0) {
+			// Get all clients to execute open method.
+			NetChannel[] channels = getClients();
+			// Logs a message.
+			logger.info(locale.text("net.service.start.opening", channels.length, serviceID));
+			// Traverse clients.
+			for (NetChannel channel : channels) {
+				try {
+					channel.open();
+				} catch (Exception e) {
+					logger.error(locale.text("net.service.client.open.err", serviceID, channel.getChannelID(), e.getMessage()), e);
+				}
+			}
+		}
+
 		// Return started successfully.
 		return true;
 	}
@@ -417,20 +520,43 @@ public abstract class NetServiceHandler implements NetService {
 		synchronized (stateLock) {
 			if (state == NetServiceState.STOPPED) return true;
 
+			// Logs a message.
+			logger.info(locale.text("net.service.stopping", serviceID));
+
 			// Publish stopping event.
 			NetEventFactory factory = this.getEventFactory();
 			BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
 			NetServiceEvent event = factory.createServiceEvent(this, this, NetServiceState.STOPPING);
-			if (publisher.publish(event).isCancelled()) return false;
+			if (publisher.publish(event).isCancelled()) {
+				logger.warn(locale.text("net.service.stopping.cancelled", serviceID));
+				return false;
+			}
 
 			// Destroy all channels.
 			NetChannel[] allChannels = getChannels();
-			for (NetChannel channel : allChannels) {
-				// Close and destroy channel.
-				channel.destroy();
+			// Check channel size.
+			if (allChannels.length > 0) {
+				// Logs a message.
+				logger.info(locale.text("net.service.stop.destroying", allChannels.length, serviceID));
+				// Traverse channels.
+				for (NetChannel channel : allChannels) {
+					// Close and destroy channel.
+					channel.destroy();
+				}
 			}
-			// Do stop logic.
-			if (!doStop()) return false;
+
+			try {
+				// Do stop logic.
+				if (!doStop()) {
+					logger.warn(locale.text("net.service.stop.failed", serviceID));
+					return false;
+				}
+			} catch (Exception e) {
+				logger.error(locale.text("net.service.stop.err", serviceID, e.getMessage()), e);
+				return false;
+			}
+
+			// Set stopped state.
 			state = NetServiceState.STOPPED;
 			stopTime = System.currentTimeMillis();
 			channels.clear();
@@ -442,8 +568,11 @@ public abstract class NetServiceHandler implements NetService {
 				monitoringTaskID = 0;
 			}
 
+			// Logs a message.
+			logger.info(locale.text("net.service.stop.success", serviceID));
 			// Publish stopped event.
 			publisher.publish(factory.createServiceEvent(this, this, NetServiceState.STOPPED));
+
 		}
 		// Return stopped successfully.
 		return true;
@@ -454,23 +583,30 @@ public abstract class NetServiceHandler implements NetService {
 	/**
 	 * Add a network channel to this service.
 	 * @param channel The network channel object.
+	 * @return Whether the addition to the service succeeded.
 	 */
-	void addChannel(NetChannel channel) {
-		if (state == NetServiceState.STOPPED) return;
-		channels.put(channel.getChannelID(), channel);
+	final boolean addChannel(NetChannel channel) {
+		if (state == NetServiceState.STOPPED) return false;
+		synchronized (stateLock) {
+			if (state == NetServiceState.STOPPED) return false;
+			channels.put(channel.getChannelID(), channel);
+		}
 		synchronized (channelLock) {
 			if (!channelChanged) channelChanged = true;
 		}
+		return true;
 	}
 
 	/**
 	 * Remove a channel from this service.
-	 * @param channelID The network channel unique identification.
+	 * @param channel The network channel object.
 	 */
-	void removeChannel(String channelID) {
-		channels.remove(channelID);
-		synchronized (channelLock) {
-			if (!channelChanged) channelChanged = true;
+	final void removeChannel(NetChannel channel) {
+		NetChannel removed = channels.remove(channel.getChannelID());
+		if (removed != null) {
+			synchronized (channelLock) {
+				if (!channelChanged) channelChanged = true;
+			}
 		}
 	}
 
@@ -479,7 +615,7 @@ public abstract class NetServiceHandler implements NetService {
 	 * @param channel The network channel object.
 	 * @param time The current system time.
 	 */
-	void updateMessageTime(NetChannel channel, long time) {
+	final void updateMessageTime(NetChannel channel, long time) {
 		messageTime = time;
 	}
 
@@ -488,7 +624,7 @@ public abstract class NetServiceHandler implements NetService {
 	 * @param channel The network channel object.
 	 * @param time The current system time.
 	 */
-	void updateSentTime(NetChannel channel, long time) {
+	final void updateSentTime(NetChannel channel, long time) {
 		sentTime = time;
 	}
 
@@ -497,9 +633,10 @@ public abstract class NetServiceHandler implements NetService {
 	/**
 	 * Do service file configuration logic.
 	 * @param file The configuration file (it is null when there is no configuration file).
+	 * @param reset Whether reset the data of the current configurable object.
 	 * @return Returns whether the service was successfully configured.
 	 */
-	protected abstract boolean doConfig(PropertiesConfigFile file);
+	protected abstract boolean doConfig(PropertiesConfigFile file, boolean reset);
 
 	/**
 	 * Do start service processing logic.

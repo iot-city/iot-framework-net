@@ -60,7 +60,7 @@ public final class NetOutboundContext {
 	 * @param outbound Network outbound message processing object (not null).
 	 * @param priority Outbound message processing priority (the priority with the highest value is called first, 0 by default).
 	 */
-	void add(NetOutbound<?, ?> outbound, int priority) {
+	final void add(NetOutbound<?, ?> outbound, int priority) {
 		Class<?> clazz = outbound.getClass();
 		synchronized (lock) {
 			if (classes.contains(clazz)) return;
@@ -74,7 +74,7 @@ public final class NetOutboundContext {
 	 * Remove an outbound object from context.
 	 * @param outbound Network outbound message processing object (not null).
 	 */
-	void remove(NetOutbound<?, ?> outbound) {
+	final void remove(NetOutbound<?, ?> outbound) {
 		synchronized (lock) {
 			Iterator<NetOutboundObject> iterator = list.iterator();
 			while (iterator.hasNext()) {
@@ -93,7 +93,7 @@ public final class NetOutboundContext {
 	 * Get outbound objects from context (returns null if there is no outbound in this context).
 	 * @return Outbound objects in this context.
 	 */
-	NetOutboundObject[] getOutbounds() {
+	final NetOutboundObject[] getOutbounds() {
 		if (modified) {
 			synchronized (lock) {
 				if (modified) {

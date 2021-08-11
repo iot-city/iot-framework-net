@@ -5,7 +5,7 @@ package org.iotcity.iot.framework.net.io;
  * @author ardon
  * @date 2021-07-02
  */
-public class NetResponseResultGroup<RES extends NetDataResponse> {
+public final class NetResponseResultGroup<RES extends NetDataResponse> {
 
 	/**
 	 * The number of response data executed successfully.
@@ -31,14 +31,14 @@ public class NetResponseResultGroup<RES extends NetDataResponse> {
 	/**
 	 * Gets the number of response data executed successfully.
 	 */
-	public int getSuccesses() {
+	public final int getSuccesses() {
 		return successes;
 	}
 
 	/**
 	 * Gets the response result data array (returns not null).
 	 */
-	public NetResponseResult<RES>[] getResults() {
+	public final NetResponseResult<RES>[] getResults() {
 		return results;
 	}
 

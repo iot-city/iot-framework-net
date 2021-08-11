@@ -32,14 +32,14 @@ public class NetServiceEventData {
 	/**
 	 * Gets the network service object.
 	 */
-	public NetService getService() {
+	public final NetService getService() {
 		return service;
 	}
 
 	/**
 	 * Gets the network service state.
 	 */
-	public NetServiceState getState() {
+	public final NetServiceState getState() {
 		return state;
 	}
 

@@ -38,5 +38,13 @@ public class NetChannelOptions {
 	 * If no data is sent within the specified idle time in milliseconds, the channel will be closed (0 by default, when it is set to 0, this option is disabled).
 	 */
 	public long sendingIdleTimeout = NetChannelHandler.CONST_SENDING_IDLE_TIMEOUT;
+	/**
+	 * Indicates whether reopen the client channel after channel closing (false by default).
+	 */
+	public boolean reopenOnClosed = NetChannelHandler.CONST_REOPEN_ON_CLOSED;
+	/**
+	 * The delayed time in milliseconds for automatically reopen the client channel after channel closing (5000 ms by default, the value must be greater than 0).
+	 */
+	public long reopenOnClosedDelay = NetChannelHandler.CONST_REOPEN_ON_CLOSED_DELAY;
 
 }

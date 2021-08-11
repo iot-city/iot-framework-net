@@ -86,7 +86,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * Gets the session manager of this net manager (returns not null).
 	 * @return The session manager to manage sessions.
 	 */
-	public NetSessionManager getSessionManager() {
+	public final NetSessionManager getSessionManager() {
 		return sessions;
 	}
 
@@ -94,7 +94,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * Gets the task handler in this network manager (returns not null).
 	 * @return Task handler object.
 	 */
-	public TaskHandler getTaskHandler() {
+	public final TaskHandler getTaskHandler() {
 		return taskHandler;
 	}
 
@@ -102,14 +102,14 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * Set the task handler in this network manager.
 	 * @param taskHandler The task handler in this network manager (required, can not be null).
 	 */
-	public void setTaskHandler(TaskHandler taskHandler) {
+	public final void setTaskHandler(TaskHandler taskHandler) {
 		if (taskHandler == null) return;
 		this.taskHandler = taskHandler;
 		this.maximumThreadSize = taskHandler.getThreadPoolExecutor().getMaximumPoolSize() / 3 - 1;
 	}
 
 	@Override
-	public boolean config(NetConfig data, boolean reset) {
+	public final boolean config(NetConfig data, boolean reset) {
 		if (data == null) return false;
 
 		// Reset all services if necessary.
@@ -132,7 +132,7 @@ public final class NetManager implements Configurable<NetConfig> {
 		if (svcsConfig != null && svcsConfig.length > 0) {
 			for (NetConfigService config : svcsConfig) {
 				// Verify config data.
-				if (!config.enabled) continue;
+				if (!config.enabled || config.instance == null) continue;
 
 				// New service instance.
 				Class<?> clazz = config.instance;
@@ -145,21 +145,19 @@ public final class NetManager implements Configurable<NetConfig> {
 						this,
 						config.serviceID
 					});
-				} catch (Exception e) {
-					if (e instanceof NoSuchMethodException) {
-						try {
-							service = IoTFramework.getInstance(clazz);
-						} catch (Exception e2) {
-							FrameworkNet.getLogger().error(e2);
-						}
-					} else {
-						FrameworkNet.getLogger().error(e);
+				} catch (NoSuchMethodException e) {
+					try {
+						service = IoTFramework.getInstance(clazz);
+					} catch (Exception e2) {
+						FrameworkNet.getLogger().error(e2);
 					}
+				} catch (Exception e) {
+					FrameworkNet.getLogger().error(e);
 				}
 
 				// Add to manager and config the service.
 				if (!this.addService(service) || !service.config(config.options, reset)) {
-					FrameworkNet.getLogger().error(FrameworkNet.getLocale().text("net.manager.config.err", clazz == null ? null : clazz.getName(), config.serviceID));
+					FrameworkNet.getLogger().error(FrameworkNet.getLocale().text("net.manager.config.err", clazz.getName(), config.serviceID));
 					return false;
 				}
 
@@ -200,7 +198,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	/**
 	 * Start all services.
 	 */
-	public void startAllServices() {
+	public final void startAllServices() {
 		NetService[] svcs = getServices();
 		if (svcs.length == 0) return;
 		for (NetService svc : svcs) {
@@ -215,7 +213,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	/**
 	 * Stop all services.
 	 */
-	public void stopAllServices() {
+	public final void stopAllServices() {
 		NetService[] svcs = getServices();
 		if (svcs.length == 0) return;
 		for (NetService svc : svcs) {
@@ -233,7 +231,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @param service The network service object (required, can not be null).
 	 * @return Returns whether the addition was successful.
 	 */
-	public boolean addService(NetService service) {
+	public final boolean addService(NetService service) {
 		if (service == null || service.getNetManager() != this) return false;
 		String serviceID = service.getServiceID().toUpperCase();
 		synchronized (services) {
@@ -248,7 +246,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @param serviceID The service unique identification (required, can not be null or empty).
 	 * @return Returns the removed network service object.
 	 */
-	public NetService removeService(String serviceID) {
+	public final NetService removeService(String serviceID) {
 		if (StringHelper.isEmpty(serviceID)) return null;
 		synchronized (services) {
 			return services.remove(serviceID.toUpperCase());
@@ -260,7 +258,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @param stopOnRemoved Indicates whether to stop the service on removal.
 	 * @return The services in this manager.
 	 */
-	public NetService[] clearServices(boolean stopOnRemoved) {
+	public final NetService[] clearServices(boolean stopOnRemoved) {
 		synchronized (services) {
 			NetService[] svcs = services.values().toArray(new NetService[services.size()]);
 			if (stopOnRemoved) {
@@ -282,7 +280,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @param serviceID The service unique identification (required, can not be null or empty).
 	 * @return Returns the network service object for specified service ID.
 	 */
-	public NetService getService(String serviceID) {
+	public final NetService getService(String serviceID) {
 		if (StringHelper.isEmpty(serviceID)) return null;
 		return services.get(serviceID.toUpperCase());
 	}
@@ -291,7 +289,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * Gets all network services in this manager (returns not null).
 	 * @return The services in this manager.
 	 */
-	public NetService[] getServices() {
+	public final NetService[] getServices() {
 		synchronized (services) {
 			return services.values().toArray(new NetService[services.size()]);
 		}
@@ -300,7 +298,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	/**
 	 * Gets the service object size in this manager.
 	 */
-	public int getServiceSize() {
+	public final int getServiceSize() {
 		return services.size();
 	}
 
@@ -312,7 +310,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @return Whether message processing succeeded or multithreading started successfully.
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "io" is null.
 	 */
-	public boolean onMessage(NetIO<?, ?> io) throws IllegalArgumentException {
+	public final boolean onMessage(NetIO<?, ?> io) throws IllegalArgumentException {
 		return onMessage(io, null);
 	}
 
@@ -323,7 +321,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @return Whether message processing succeeded or multithreading started successfully.
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "io" is null.
 	 */
-	public boolean onMessage(NetIO<?, ?> io, NetMessageStatusCallback callback) throws IllegalArgumentException {
+	public final boolean onMessage(NetIO<?, ?> io, NetMessageStatusCallback callback) throws IllegalArgumentException {
 		if (io == null) throw new IllegalArgumentException("Parameter io can not be null!");
 		// Multithreading is used only for asynchronous response mode.
 		if (io.isAsynchronous() && io.isMultithreading()) {
@@ -378,7 +376,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @return Whether the data request is executed successfully.
 	 * @throws IllegalArgumentException An error will be thrown when one of the parameters "channel", "request" or "responseClass" is null.
 	 */
-	public <REQ extends NetDataRequest, RES extends NetDataResponse> boolean asyncRequestOne(NetChannel channel, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
+	public final <REQ extends NetDataRequest, RES extends NetDataResponse> boolean asyncRequestOne(NetChannel channel, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
 		if (channel == null || request == null || responseClass == null) throw new IllegalArgumentException("Parameter channel, request and responseClass can not be null!");
 		// Get to remote I/O object.
 		NetIO<?, ?> io = channel.getToRemoteIO();
@@ -405,7 +403,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @return The number of channels that successfully executed the data request.
 	 * @throws IllegalArgumentException An error will be thrown when one of the parameters "selector", "request" or "responseClass" is null.
 	 */
-	public <REQ extends NetDataRequest, RES extends NetDataResponse> int asyncRequestAll(NetChannelSelector selector, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
+	public final <REQ extends NetDataRequest, RES extends NetDataResponse> int asyncRequestAll(NetChannelSelector selector, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
 		return asyncRequestAll(selector, request, responseClass, callback, timeout, 0, false);
 	}
 
@@ -423,7 +421,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @return The number of channels that successfully executed the data request.
 	 * @throws IllegalArgumentException An error will be thrown when one of the parameters "selector", "request" or "responseClass" is null.
 	 */
-	public <REQ extends NetDataRequest, RES extends NetDataResponse> int asyncRequestAll(NetChannelSelector selector, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout, int threads, boolean expandCorePoolSize) throws IllegalArgumentException {
+	public final <REQ extends NetDataRequest, RES extends NetDataResponse> int asyncRequestAll(NetChannelSelector selector, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout, int threads, boolean expandCorePoolSize) throws IllegalArgumentException {
 		if (selector == null || request == null || responseClass == null) throw new IllegalArgumentException("Parameter selector, request and responseClass can not be null!");
 
 		// Get channel objects.
@@ -488,7 +486,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @return The network response result data.
 	 * @throws IllegalArgumentException An error will be thrown when one of the parameters "channel", "request" or "responseClass" is null.
 	 */
-	public <REQ extends NetDataRequest, RES extends NetDataResponse> NetResponseResult<RES> syncRequestOne(NetChannel channel, REQ request, Class<RES> responseClass, long timeout) throws IllegalArgumentException {
+	public final <REQ extends NetDataRequest, RES extends NetDataResponse> NetResponseResult<RES> syncRequestOne(NetChannel channel, REQ request, Class<RES> responseClass, long timeout) throws IllegalArgumentException {
 		if (channel == null || request == null || responseClass == null) throw new IllegalArgumentException("Parameter channel, request and responseClass can not be null!");
 		// Get to remote I/O object.
 		NetIO<?, ?> io = channel.getToRemoteIO();
@@ -512,7 +510,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @return The network response result group data.
 	 * @throws IllegalArgumentException An error will be thrown when one of the parameters "selector", "request" or "responseClass" is null.
 	 */
-	public <REQ extends NetDataRequest, RES extends NetDataResponse> NetResponseResultGroup<RES> syncRequestAll(NetChannelSelector selector, REQ request, Class<RES> responseClass, long timeout) throws IllegalArgumentException {
+	public final <REQ extends NetDataRequest, RES extends NetDataResponse> NetResponseResultGroup<RES> syncRequestAll(NetChannelSelector selector, REQ request, Class<RES> responseClass, long timeout) throws IllegalArgumentException {
 		return syncRequestAll(selector, request, responseClass, timeout, 0, false);
 	}
 
@@ -529,7 +527,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @return The network response result group data.
 	 * @throws IllegalArgumentException An error will be thrown when one of the parameters "selector", "request" or "responseClass" is null.
 	 */
-	public <REQ extends NetDataRequest, RES extends NetDataResponse> NetResponseResultGroup<RES> syncRequestAll(NetChannelSelector selector, REQ request, Class<RES> responseClass, long timeout, int threads, boolean expandCorePoolSize) throws IllegalArgumentException {
+	public final <REQ extends NetDataRequest, RES extends NetDataResponse> NetResponseResultGroup<RES> syncRequestAll(NetChannelSelector selector, REQ request, Class<RES> responseClass, long timeout, int threads, boolean expandCorePoolSize) throws IllegalArgumentException {
 		if (selector == null || request == null || responseClass == null) throw new IllegalArgumentException("Parameter selector, request and responseClass can not be null!");
 
 		// Get channel objects.

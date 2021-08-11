@@ -64,42 +64,42 @@ public class NetMessageEvent extends BusEvent {
 	/**
 	 * Gets the network I/O object (returns not null).
 	 */
-	public NetIO<?, ?> getNetIO() {
+	public final NetIO<?, ?> getNetIO() {
 		return io;
 	}
 
 	/**
 	 * Indicates whether the asynchronous processing mode is used.
 	 */
-	public boolean isAsynchronous() {
+	public final boolean isAsynchronous() {
 		return io.isAsynchronous();
 	}
 
 	/**
 	 * Indicates whether the send response method has been executed.
 	 */
-	public boolean isSentResponse() {
+	public final boolean isSentResponse() {
 		return sentResponse;
 	}
 
 	/**
 	 * Gets the sending status of the response data (returns null if the response sending is not executed).
 	 */
-	public NetMessageStatus getSentStatus() {
+	public final NetMessageStatus getSentStatus() {
 		return sentStatus;
 	}
 
 	/**
 	 * Gets the business logic processing status of the response (returns null if the response sending is not executed).
 	 */
-	public NetMessageStatus getBusinessStatus() {
+	public final NetMessageStatus getBusinessStatus() {
 		return businessStatus;
 	}
 
 	/**
 	 * Gets the business response data object (returns null if the response sending is not executed).
 	 */
-	public NetDataResponse getBusinessResponse() {
+	public final NetDataResponse getBusinessResponse() {
 		return businessResponse;
 	}
 
@@ -110,7 +110,7 @@ public class NetMessageEvent extends BusEvent {
 	 * @return The sending status of the response data.
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "status" is null.
 	 */
-	public NetMessageStatus sendResponse(NetMessageStatus status, NetDataResponse response) throws IllegalArgumentException {
+	public final NetMessageStatus sendResponse(NetMessageStatus status, NetDataResponse response) throws IllegalArgumentException {
 		if (status == null) throw new IllegalArgumentException("Parameter status can not be null!");
 		if (sentResponse) return NetMessageStatus.DUPLICATED;
 		synchronized (lock) {

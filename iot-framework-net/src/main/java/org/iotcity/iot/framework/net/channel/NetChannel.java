@@ -24,6 +24,11 @@ public interface NetChannel extends Configurable<NetChannelOptions> {
 	String getChannelID();
 
 	/**
+	 * Indicates whether this channel is a client channel.
+	 */
+	boolean isClient();
+
+	/**
 	 * Indicates whether to use multithreading to process request and response data when allowed.
 	 */
 	boolean isMultithreading();
@@ -49,6 +54,16 @@ public interface NetChannel extends Configurable<NetChannelOptions> {
 	long getSendingIdleTimeout();
 
 	/**
+	 * Indicates whether reopen the client channel after channel closing (false by default).
+	 */
+	boolean isReopenOnClosed();
+
+	/**
+	 * Gets the delayed time in milliseconds for automatically reopen the client channel after channel closing (5000 ms by default, the value must be greater than 0).
+	 */
+	long getReopenOnClosedDelay();
+
+	/**
 	 * Gets the current state of this channel.
 	 */
 	NetChannelState getState();
@@ -62,6 +77,11 @@ public interface NetChannel extends Configurable<NetChannelOptions> {
 	 * Indicates whether this channel has been closed.
 	 */
 	boolean isClosed();
+
+	/**
+	 * Indicates whether this channel has been destroyed.
+	 */
+	boolean isDestroyed();
 
 	/**
 	 * Gets the create time of this channel in milliseconds.
@@ -99,7 +119,7 @@ public interface NetChannel extends Configurable<NetChannelOptions> {
 	void updateSentTime();
 
 	/**
-	 * Gets the responser to process asynchronous response callback message.
+	 * Gets the responser to process asynchronous response callback message (returns not null).
 	 */
 	NetResponser getResponser();
 
@@ -188,7 +208,7 @@ public interface NetChannel extends Configurable<NetChannelOptions> {
 	boolean close() throws Exception;
 
 	/**
-	 * Destroy this channel without any event, calling this method will close this channel automatically.
+	 * Destroy this channel without closing event, calling this method will close this channel automatically.
 	 */
 	void destroy();
 

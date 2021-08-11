@@ -13,7 +13,7 @@ import org.iotcity.iot.framework.core.logging.LoggerConfigure;
  * @date 2021-06-26
  */
 @AutoConfigureManager
-public class NetConfigureManager extends PropertiesConfigureManager {
+public final class NetConfigureManager extends PropertiesConfigureManager {
 
 	/**
 	 * Constructor for configure manager of framework net.

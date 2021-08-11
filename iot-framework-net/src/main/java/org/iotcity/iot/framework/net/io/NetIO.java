@@ -47,17 +47,17 @@ public interface NetIO<READER, SENDER> {
 	NetOutboundObject[] getOutbounds();
 
 	/**
-	 * Gets the responser to process asynchronous response callback message.
+	 * Gets the responser to process asynchronous response callback message (returns not null).
 	 */
 	NetResponser getResponser();
 
 	/**
-	 * Gets the reader object to read messages.
+	 * Gets the reader object to read messages (returns null if there is no reader for current I/O object, e.g. when the message is asynchronous requesting to remote, null value will be returned).
 	 */
 	READER getReader();
 
 	/**
-	 * Gets the sender object to send messages.
+	 * Gets the sender object to send messages (returns null if there is no sender for current I/O object).
 	 */
 	SENDER getSender();
 

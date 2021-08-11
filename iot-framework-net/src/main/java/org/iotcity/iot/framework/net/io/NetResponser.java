@@ -48,7 +48,7 @@ public final class NetResponser {
 	 * @param callback The asynchronous response callback processing object (required, can not be null).
 	 * @param timeout The timeout value in milliseconds that waiting for a response data callback (required, the value is greater than 0).
 	 */
-	public <REQ extends NetDataRequest, RES extends NetDataResponse> void addCallback(NetIO<?, ?> io, String messageQueue, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) {
+	public final <REQ extends NetDataRequest, RES extends NetDataResponse> void addCallback(NetIO<?, ?> io, String messageQueue, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) {
 		NetResponserObject object = new NetResponserObject(io, request, responseClass, callback, timeout);
 		synchronized (lock) {
 			NetResponserContext context = map.get(messageQueue);
@@ -72,7 +72,7 @@ public final class NetResponser {
 	 * @param response The network response data object (optional, set it to null when the response is not required).
 	 * @return The number of successful callbacks.
 	 */
-	public int tryCallback(NetMessageDirection direction, NetIO<?, ?> io, String messageQueue, Class<?> responseClass, NetMessageStatus status, NetDataResponse response) {
+	public final int tryCallback(NetMessageDirection direction, NetIO<?, ?> io, String messageQueue, Class<?> responseClass, NetMessageStatus status, NetDataResponse response) {
 		// Get the responser data context.
 		NetResponserContext context = map.get(messageQueue);
 		if (context == null) return 0;
@@ -93,7 +93,7 @@ public final class NetResponser {
 	 * Check the timeout callback objects and execute the timeout callback processing.
 	 * @param currentTime Current system time.
 	 */
-	public void checkTimeout(long currentTime) {
+	public final void checkTimeout(long currentTime) {
 		// Get responser data contexts.
 		NetResponserContext[] contexts = getContexts(false);
 		// Get the timeout status.
@@ -114,7 +114,7 @@ public final class NetResponser {
 	/**
 	 * Execute all responser data callback before the channel closing.
 	 */
-	public void callbackOnClosing() {
+	public final void callbackOnClosing() {
 		// Get responser data contexts.
 		NetResponserContext[] contexts = getContexts(true);
 		// Get the closed status.
@@ -139,7 +139,7 @@ public final class NetResponser {
 	 * @param reset Whether to reset all responser contexts after returning data.
 	 * @return The responser contexts.
 	 */
-	private NetResponserContext[] getContexts(boolean reset) {
+	private final NetResponserContext[] getContexts(boolean reset) {
 		// Get the contexts as the default returning data.
 		NetResponserContext[] returns = contexts;
 		if (contextChanged) {
@@ -176,7 +176,7 @@ public final class NetResponser {
 	 * @param response The network response data object (optional, set it to null when the response is not required).
 	 * @return Whether the callback execution is successful.
 	 */
-	private boolean invokeCllaback(NetResponserObject object, NetMessageDirection direction, NetIO<?, ?> io, Class<?> responseClass, NetMessageStatus status, NetDataResponse response) {
+	private final boolean invokeCllaback(NetResponserObject object, NetMessageDirection direction, NetIO<?, ?> io, Class<?> responseClass, NetMessageStatus status, NetDataResponse response) {
 		// Get the callback object.
 		NetResponseCallback<?> callback = object.callback;
 		try {
@@ -233,7 +233,7 @@ public final class NetResponser {
 		 * Add responser data object to context.
 		 * @param object The network asynchronous responser object (not null).
 		 */
-		synchronized void add(NetResponserObject object) {
+		final synchronized void add(NetResponserObject object) {
 			int len = array.length;
 			if (len == 0) {
 				array = new NetResponserObject[] {
@@ -252,7 +252,7 @@ public final class NetResponser {
 		 * @param responseClass The response data class (not null).
 		 * @return The network asynchronous responser objects.
 		 */
-		NetResponserObject[] remove(Class<?> responseClass) {
+		final NetResponserObject[] remove(Class<?> responseClass) {
 			// Remove objects by response class.
 			NetResponserObject[] objects = removeByFilter(new NetResponserFilter() {
 
@@ -283,7 +283,7 @@ public final class NetResponser {
 		 * @param time Current system time.
 		 * @return The network asynchronous responser objects.
 		 */
-		NetResponserObject[] removeTimeout(long time) {
+		final NetResponserObject[] removeTimeout(long time) {
 			// Remove objects by timeout.
 			NetResponserObject[] objects = removeByFilter(new NetResponserFilter() {
 
@@ -313,7 +313,7 @@ public final class NetResponser {
 		 * Remove all responser data objects.
 		 * @return The network asynchronous responser objects.
 		 */
-		synchronized NetResponserObject[] removeAll() {
+		final synchronized NetResponserObject[] removeAll() {
 			NetResponserObject[] ret = array;
 			array = new NetResponserObject[0];
 			return ret;
@@ -324,7 +324,7 @@ public final class NetResponser {
 		 * @param filter The response data filter (not null).
 		 * @return The network asynchronous responser objects.
 		 */
-		synchronized private NetResponserObject[] removeByFilter(NetResponserFilter filter) {
+		private final synchronized NetResponserObject[] removeByFilter(NetResponserFilter filter) {
 			int len = array.length;
 			if (len == 1) {
 				// There is only one responser data.

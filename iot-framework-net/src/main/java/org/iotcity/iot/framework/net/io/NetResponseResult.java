@@ -40,35 +40,35 @@ public final class NetResponseResult<RES extends NetDataResponse> {
 	/**
 	 * Gets the network service of response (returns not null).
 	 */
-	public NetService getService() {
+	public final NetService getService() {
 		return io.getService();
 	}
 
 	/**
 	 * Gets the network channel of response (returns not null).
 	 */
-	public NetChannel getChannel() {
+	public final NetChannel getChannel() {
 		return io.getChannel();
 	}
 
 	/**
 	 * Gets the network input and output object of response (returns not null).
 	 */
-	public NetIO<?, ?> getNetIO() {
+	public final NetIO<?, ?> getNetIO() {
 		return io;
 	}
 
 	/**
 	 * Gets the message process status (returns not null).
 	 */
-	public NetMessageStatus getStatus() {
+	public final NetMessageStatus getStatus() {
 		return status;
 	}
 
 	/**
 	 * Gets the response data object from remote end (returns null when it does not exist).
 	 */
-	public RES getResponse() {
+	public final RES getResponse() {
 		return response;
 	}
 

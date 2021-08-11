@@ -58,49 +58,49 @@ public class NetMessageErrorEventData {
 	/**
 	 * Gets the network message data transmission direction.
 	 */
-	public NetMessageDirection getDirection() {
+	public final NetMessageDirection getDirection() {
 		return direction;
 	}
 
 	/**
 	 * Gets the message I/O object (not null).
 	 */
-	public NetIO<?, ?> getMessageIO() {
+	public final NetIO<?, ?> getMessageIO() {
 		return messageIO;
 	}
 
 	/**
 	 * Gets the request data object (returns null when there is no request data).
 	 */
-	public NetData getRequestData() {
+	public final NetData getRequestData() {
 		return requestData;
 	}
 
 	/**
 	 * Gets the response data object (returns null when there is no response data).
 	 */
-	public NetData getResponseData() {
+	public final NetData getResponseData() {
 		return responseData;
 	}
 
 	/**
 	 * Indicates whether an exception was encountered when processing inbound or outbound data.
 	 */
-	public boolean hasException() {
+	public final boolean hasException() {
 		return exceptions != null && exceptions.length > 0;
 	}
 
 	/**
 	 * Gets the array of exception objects encountered when processing inbound or outbound data (returns null when there is no exception).
 	 */
-	public Exception[] getExceptions() {
+	public final Exception[] getExceptions() {
 		return exceptions;
 	}
 
 	/**
 	 * Gets the message processing error status (returns not null).
 	 */
-	public NetMessageStatus getErrorStatus() {
+	public final NetMessageStatus getErrorStatus() {
 		return errorStatus;
 	}
 

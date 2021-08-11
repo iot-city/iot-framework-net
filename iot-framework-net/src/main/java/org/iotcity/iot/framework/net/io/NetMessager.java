@@ -23,7 +23,7 @@ public final class NetMessager implements NetMessageEventCallback {
 	 * @return The message process status.
 	 * @throws IllegalArgumentException An error will be thrown when the parameter "io" is null.
 	 */
-	public NetMessageStatus onMessage(NetIO<?, ?> io) throws IllegalArgumentException {
+	public final NetMessageStatus onMessage(NetIO<?, ?> io) throws IllegalArgumentException {
 		if (io == null) throw new IllegalArgumentException("Parameter io can not be null!");
 
 		// Check channel and service state.
@@ -115,7 +115,7 @@ public final class NetMessager implements NetMessageEventCallback {
 	}
 
 	@Override
-	public NetMessageStatus onCallback(NetMessageEvent event, NetMessageStatus status, NetDataResponse response) {
+	public final NetMessageStatus onCallback(NetMessageEvent event, NetMessageStatus status, NetDataResponse response) {
 		if (response == null) {
 			return status;
 		} else {
@@ -129,7 +129,7 @@ public final class NetMessager implements NetMessageEventCallback {
 	 * @param request The network request data object.
 	 * @return The message process status.
 	 */
-	private NetMessageStatus handleRequest(NetIO<?, ?> io, NetData request) {
+	private final NetMessageStatus handleRequest(NetIO<?, ?> io, NetData request) {
 
 		// Get event factory and publisher.
 		NetEventFactory factory = io.getService().getEventFactory();
@@ -204,7 +204,7 @@ public final class NetMessager implements NetMessageEventCallback {
 	 * @param response The network response data object.
 	 * @return The message process status.
 	 */
-	private NetMessageStatus sendResponse(NetIO<?, ?> io, NetData request, NetDataResponse response) {
+	private final NetMessageStatus sendResponse(NetIO<?, ?> io, NetData request, NetDataResponse response) {
 		// Get response data class.
 		Class<?> responseClass = response.getClass();
 
@@ -266,7 +266,7 @@ public final class NetMessager implements NetMessageEventCallback {
 	 * @param errorStatus The message processing error status (required, not null).
 	 * @throws IllegalArgumentException An error will be thrown when one of the parameters "source", "type" or "request" is null.
 	 */
-	private void publishErrorEvent(NetMessageDirection direction, NetIO<?, ?> messageIO, NetData requestData, NetData responseData, Exception[] exceptions, NetMessageStatus errorStatus) throws IllegalArgumentException {
+	private final void publishErrorEvent(NetMessageDirection direction, NetIO<?, ?> messageIO, NetData requestData, NetData responseData, Exception[] exceptions, NetMessageStatus errorStatus) throws IllegalArgumentException {
 		// Get event factory and publisher.
 		NetEventFactory factory = messageIO.getService().getEventFactory();
 		BusEventPublisher publisher = IoTFramework.getBusEventPublisher();

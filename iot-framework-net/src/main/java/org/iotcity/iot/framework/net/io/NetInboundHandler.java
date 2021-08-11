@@ -47,24 +47,24 @@ public abstract class NetInboundHandler<IO extends NetIO<?, ?>, DATA extends Net
 	// --------------------------- Override methods ----------------------------
 
 	@Override
-	public Class<?> getIOClass() {
+	public final Class<?> getIOClass() {
 		return ioClass;
 	}
 
 	@Override
-	public Class<?> getDataClass() {
+	public final Class<?> getDataClass() {
 		return dataClass;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public boolean filterIO(NetIO<?, ?> io) {
+	public final boolean filterIO(NetIO<?, ?> io) {
 		return filter((IO) io);
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public NetData readIO(NetIO<?, ?> io) throws Exception {
+	public final NetData readIO(NetIO<?, ?> io) throws Exception {
 		return read((IO) io);
 	}
 

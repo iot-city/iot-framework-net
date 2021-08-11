@@ -51,49 +51,49 @@ public class NetIOHandler<READER, SENDER> implements NetIO<READER, SENDER> {
 	}
 
 	@Override
-	public NetService getService() {
+	public final NetService getService() {
 		return service;
 	}
 
 	@Override
-	public NetChannel getChannel() {
+	public final NetChannel getChannel() {
 		return channel;
 	}
 
 	@Override
-	public boolean isAsynchronous() {
+	public final boolean isAsynchronous() {
 		return asynchronous;
 	}
 
 	@Override
-	public boolean isMultithreading() {
+	public final boolean isMultithreading() {
 		return channel.isMultithreading();
 	}
 
 	@Override
-	public NetInboundObject[] getInbounds() {
+	public final NetInboundObject[] getInbounds() {
 		NetInboundObject[] inbounds = channel.getInbounds(getClass());
 		return inbounds == null ? service.getInbounds(getClass()) : inbounds;
 	}
 
 	@Override
-	public NetOutboundObject[] getOutbounds() {
+	public final NetOutboundObject[] getOutbounds() {
 		NetOutboundObject[] outbounds = channel.getOutbounds(getClass());
 		return outbounds == null ? service.getOutbounds(getClass()) : outbounds;
 	}
 
 	@Override
-	public NetResponser getResponser() {
+	public final NetResponser getResponser() {
 		return channel.getResponser();
 	}
 
 	@Override
-	public READER getReader() {
+	public final READER getReader() {
 		return reader;
 	}
 
 	@Override
-	public SENDER getSender() {
+	public final SENDER getSender() {
 		return sender;
 	}
 

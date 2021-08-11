@@ -38,21 +38,21 @@ public class NetChannelEventData {
 	/**
 	 * Gets the network service object.
 	 */
-	public NetService getService() {
+	public final NetService getService() {
 		return service;
 	}
 
 	/**
 	 * Gets the network channel object.
 	 */
-	public NetChannel getChannel() {
+	public final NetChannel getChannel() {
 		return channel;
 	}
 
 	/**
 	 * Gets the network channel state.
 	 */
-	public NetChannelState getState() {
+	public final NetChannelState getState() {
 		return state;
 	}
 

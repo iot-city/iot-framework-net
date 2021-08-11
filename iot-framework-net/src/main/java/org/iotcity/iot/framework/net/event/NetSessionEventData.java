@@ -32,14 +32,14 @@ public class NetSessionEventData {
 	/**
 	 * Gets the network session object.
 	 */
-	public NetSession getSession() {
+	public final NetSession getSession() {
 		return session;
 	}
 
 	/**
 	 * Gets the network session state.
 	 */
-	public NetSessionState getState() {
+	public final NetSessionState getState() {
 		return state;
 	}
 
