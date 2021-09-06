@@ -23,6 +23,16 @@ public enum NetMessageStatus {
 	LOGICAL_FAILED,
 
 	/**
+	 * The reader object in network I/O does not found.
+	 */
+	NO_READER,
+
+	/**
+	 * The sender object in network I/O does not found.
+	 */
+	NO_SENDER,
+
+	/**
 	 * Inbound processing object not found.
 	 */
 	NO_INBOUND,

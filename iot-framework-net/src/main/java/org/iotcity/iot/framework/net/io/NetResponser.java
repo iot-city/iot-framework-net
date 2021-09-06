@@ -6,8 +6,8 @@ import java.util.Map;
 import org.iotcity.iot.framework.IoTFramework;
 import org.iotcity.iot.framework.core.bus.BusEventPublisher;
 import org.iotcity.iot.framework.net.FrameworkNet;
-import org.iotcity.iot.framework.net.event.NetEventFactory;
-import org.iotcity.iot.framework.net.event.NetMessageErrorEvent;
+import org.iotcity.iot.framework.net.support.bus.NetEventFactory;
+import org.iotcity.iot.framework.net.support.bus.NetMessageErrorEvent;
 
 /**
  * The responser to process asynchronous response callback message.
@@ -67,7 +67,7 @@ public final class NetResponser {
 	 * @param direction The network message data transmission direction (required, not null).
 	 * @param io The network input and output object (required, can not be null).
 	 * @param messageQueue The message queue key of the paired message request and response (required, can not be null or empty).
-	 * @param responseClass The response data class (required, can not be null).
+	 * @param responseClass The response data class (required, can not be null, reference: NetDataResponse).
 	 * @param status The network message status (required, can not be null).
 	 * @param response The network response data object (optional, set it to null when the response is not required).
 	 * @return The number of successful callbacks.

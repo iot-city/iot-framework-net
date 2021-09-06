@@ -1,6 +1,8 @@
 package org.iotcity.iot.framework.net.channel;
 
 import org.iotcity.iot.framework.core.config.Configurable;
+import org.iotcity.iot.framework.core.i18n.LocaleText;
+import org.iotcity.iot.framework.core.logging.Logger;
 import org.iotcity.iot.framework.net.io.NetIO;
 import org.iotcity.iot.framework.net.io.NetInbound;
 import org.iotcity.iot.framework.net.io.NetOutbound;
@@ -22,6 +24,16 @@ public interface NetChannel extends Configurable<NetChannelOptions> {
 	 * Gets the channel unique identification (returns not null).
 	 */
 	String getChannelID();
+
+	/**
+	 * Gets the channel logger object (returns not null).
+	 */
+	Logger getLogger();
+
+	/**
+	 * Gets the channel locale object (returns not null).
+	 */
+	LocaleText getLocale();
 
 	/**
 	 * Indicates whether this channel is a client channel.

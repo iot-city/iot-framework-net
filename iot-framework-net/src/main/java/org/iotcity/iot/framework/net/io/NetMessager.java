@@ -5,10 +5,10 @@ import org.iotcity.iot.framework.core.bus.BusEventPublisher;
 import org.iotcity.iot.framework.net.FrameworkNet;
 import org.iotcity.iot.framework.net.channel.NetInboundObject;
 import org.iotcity.iot.framework.net.channel.NetOutboundObject;
-import org.iotcity.iot.framework.net.event.NetEventFactory;
-import org.iotcity.iot.framework.net.event.NetMessageErrorEvent;
-import org.iotcity.iot.framework.net.event.NetMessageEvent;
-import org.iotcity.iot.framework.net.event.NetMessageEventCallback;
+import org.iotcity.iot.framework.net.support.bus.NetEventFactory;
+import org.iotcity.iot.framework.net.support.bus.NetMessageErrorEvent;
+import org.iotcity.iot.framework.net.support.bus.NetMessageEvent;
+import org.iotcity.iot.framework.net.support.bus.NetMessageEventCallback;
 
 /**
  * Network message processing object used to process inbound data.
@@ -36,6 +36,13 @@ public final class NetMessager implements NetMessageEventCallback {
 			}
 			// Return the close state.
 			return NetMessageStatus.CHANNEL_CLOSED;
+		} else if (io.getReader() == null) {
+			// Log error message.
+			FrameworkNet.getLogger().warn(FrameworkNet.getLocale().text("net.message.no.reader", io.getClass().getName()));
+			// Publish an error event.
+			publishErrorEvent(NetMessageDirection.FROM_REMOTE_DATA, io, null, null, null, NetMessageStatus.NO_READER);
+			// Return no reader result.
+			return NetMessageStatus.NO_READER;
 		}
 
 		// Get inbounds.
@@ -207,6 +214,16 @@ public final class NetMessager implements NetMessageEventCallback {
 	private final NetMessageStatus sendResponse(NetIO<?, ?> io, NetData request, NetDataResponse response) {
 		// Get response data class.
 		Class<?> responseClass = response.getClass();
+
+		// Check sender object.
+		if (io.getSender() == null) {
+			// Log error message.
+			FrameworkNet.getLogger().warn(FrameworkNet.getLocale().text("net.message.no.sender", io.getClass().getName(), responseClass.getName()));
+			// Publish an error event.
+			publishErrorEvent(NetMessageDirection.TO_REMOTE_RESPONSE, io, request, response, null, NetMessageStatus.NO_SENDER);
+			// Return no sender result.
+			return NetMessageStatus.NO_SENDER;
+		}
 
 		// Get outbounds.
 		NetOutboundObject[] outbounds = io.getOutbounds();

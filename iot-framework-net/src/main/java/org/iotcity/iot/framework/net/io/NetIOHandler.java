@@ -12,7 +12,7 @@ import org.iotcity.iot.framework.net.channel.NetService;
  * @author ardon
  * @date 2021-06-18
  */
-public class NetIOHandler<READER, SENDER> implements NetIO<READER, SENDER> {
+public class NetIOHandler<READER extends NetReader, SENDER extends NetSender> implements NetIO<READER, SENDER> {
 
 	/**
 	 * The network service of this I/O object (not null).

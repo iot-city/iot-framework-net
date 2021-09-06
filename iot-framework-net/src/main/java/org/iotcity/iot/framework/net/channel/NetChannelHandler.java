@@ -13,11 +13,11 @@ import org.iotcity.iot.framework.core.util.task.PriorityRunnable;
 import org.iotcity.iot.framework.core.util.task.TaskHandler;
 import org.iotcity.iot.framework.net.config.NetConfigInbound;
 import org.iotcity.iot.framework.net.config.NetConfigOutbound;
-import org.iotcity.iot.framework.net.event.NetChannelEvent;
-import org.iotcity.iot.framework.net.event.NetEventFactory;
 import org.iotcity.iot.framework.net.io.NetInbound;
 import org.iotcity.iot.framework.net.io.NetOutbound;
 import org.iotcity.iot.framework.net.io.NetResponser;
+import org.iotcity.iot.framework.net.support.bus.NetChannelEvent;
+import org.iotcity.iot.framework.net.support.bus.NetEventFactory;
 
 /**
  * The network channel handler.
@@ -189,6 +189,12 @@ public abstract class NetChannelHandler implements NetChannel {
 		this.channelID = channelID;
 		this.client = isClient;
 		this.createTime = System.currentTimeMillis();
+	}
+
+	/**
+	 * Publish a created event on channel constructor executed complete.
+	 */
+	protected void publishCreatedEvent() {
 		// Publish created event.
 		NetEventFactory factory = service.getEventFactory();
 		BusEventPublisher publisher = IoTFramework.getBusEventPublisher();
@@ -257,6 +263,16 @@ public abstract class NetChannelHandler implements NetChannel {
 	@Override
 	public final String getChannelID() {
 		return channelID;
+	}
+
+	@Override
+	public final Logger getLogger() {
+		return logger;
+	}
+
+	@Override
+	public final LocaleText getLocale() {
+		return locale;
 	}
 
 	@Override

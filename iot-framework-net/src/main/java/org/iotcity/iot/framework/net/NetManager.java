@@ -7,6 +7,7 @@ import java.util.Map;
 import org.iotcity.iot.framework.IoTFramework;
 import org.iotcity.iot.framework.core.config.Configurable;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
+import org.iotcity.iot.framework.core.util.helper.SystemHelper;
 import org.iotcity.iot.framework.core.util.task.PriorityRunnable;
 import org.iotcity.iot.framework.core.util.task.TaskGroupDataContext;
 import org.iotcity.iot.framework.core.util.task.TaskGroupExecutor;
@@ -17,6 +18,8 @@ import org.iotcity.iot.framework.net.channel.NetService;
 import org.iotcity.iot.framework.net.config.NetConfig;
 import org.iotcity.iot.framework.net.config.NetConfigPool;
 import org.iotcity.iot.framework.net.config.NetConfigService;
+import org.iotcity.iot.framework.net.io.NetDataAsyncRequest;
+import org.iotcity.iot.framework.net.io.NetDataAsyncResponse;
 import org.iotcity.iot.framework.net.io.NetDataRequest;
 import org.iotcity.iot.framework.net.io.NetDataResponse;
 import org.iotcity.iot.framework.net.io.NetIO;
@@ -55,6 +58,11 @@ public final class NetManager implements Configurable<NetConfig> {
 	 */
 	private final NetRequester requester = new NetRequester();
 	/**
+	 * The unique ID of the current server, which is used for distributed access.<br/>
+	 * If it is not set, the current server IP address and MAC address will be automatically used as the default value.
+	 */
+	private String serverID;
+	/**
 	 * Task handler objects supporting thread pool to execute tasks and timer tasks (not null).
 	 */
 	private TaskHandler taskHandler;
@@ -69,18 +77,41 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * Constructor for network manager instance.
 	 */
 	public NetManager() {
-		this.setTaskHandler(TaskHandler.getDefaultHandler());
+		this(null, TaskHandler.getDefaultHandler());
 	}
 
 	/**
 	 * Constructor for network manager instance.
+	 * @param serverID The unique ID of the current server, which is used for distributed access (If it is not set, the current server IP address and MAC address will be automatically used as the default value).
 	 * @param taskHandler The task handler object supporting thread pool to execute tasks and timer tasks.
 	 */
-	public NetManager(TaskHandler taskHandler) {
+	public NetManager(String serverID, TaskHandler taskHandler) {
+		// Check server ID.
+		if (StringHelper.isEmpty(serverID)) {
+			// Gets the IP and MAC address.
+			String ip = SystemHelper.getLocalIP(false);
+			String mac = SystemHelper.getLocalMac(false);
+			if (StringHelper.isEmpty(mac)) {
+				// Set to template UUID.
+				serverID = StringHelper.getUUID();
+			} else {
+				// Set to IP and MAP string.
+				serverID = ip + "[" + mac + "]";
+			}
+		}
+		// Set the task handler.
 		this.setTaskHandler(taskHandler);
 	}
 
 	// ------------------------------------- Public methods -------------------------------------
+
+	/**
+	 * Gets the unique ID of the current server, which is used for distributed access (returns not null).<br/>
+	 * If it is not set, the current server IP address or MAC address will be automatically used as the default value.
+	 */
+	public final String getServerID() {
+		return serverID;
+	}
 
 	/**
 	 * Gets the session manager of this net manager (returns not null).
@@ -116,6 +147,10 @@ public final class NetManager implements Configurable<NetConfig> {
 		if (reset) {
 			// Stop and remove all services.
 			this.clearServices(true);
+		}
+		// Set the server ID.
+		if (!StringHelper.isEmpty(data.serverID)) {
+			this.serverID = data.serverID;
 		}
 
 		// Do task handler configuration.
@@ -376,7 +411,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @return Whether the data request is executed successfully.
 	 * @throws IllegalArgumentException An error will be thrown when one of the parameters "channel", "request" or "responseClass" is null.
 	 */
-	public final <REQ extends NetDataRequest, RES extends NetDataResponse> boolean asyncRequestOne(NetChannel channel, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
+	public final <REQ extends NetDataAsyncRequest, RES extends NetDataAsyncResponse> boolean asyncRequestOne(NetChannel channel, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
 		if (channel == null || request == null || responseClass == null) throw new IllegalArgumentException("Parameter channel, request and responseClass can not be null!");
 		// Get to remote I/O object.
 		NetIO<?, ?> io = channel.getToRemoteIO();
@@ -403,7 +438,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @return The number of channels that successfully executed the data request.
 	 * @throws IllegalArgumentException An error will be thrown when one of the parameters "selector", "request" or "responseClass" is null.
 	 */
-	public final <REQ extends NetDataRequest, RES extends NetDataResponse> int asyncRequestAll(NetChannelSelector selector, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
+	public final <REQ extends NetDataAsyncRequest, RES extends NetDataAsyncResponse> int asyncRequestAll(NetChannelSelector selector, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
 		return asyncRequestAll(selector, request, responseClass, callback, timeout, 0, false);
 	}
 
@@ -421,7 +456,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @return The number of channels that successfully executed the data request.
 	 * @throws IllegalArgumentException An error will be thrown when one of the parameters "selector", "request" or "responseClass" is null.
 	 */
-	public final <REQ extends NetDataRequest, RES extends NetDataResponse> int asyncRequestAll(NetChannelSelector selector, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout, int threads, boolean expandCorePoolSize) throws IllegalArgumentException {
+	public final <REQ extends NetDataAsyncRequest, RES extends NetDataAsyncResponse> int asyncRequestAll(NetChannelSelector selector, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout, int threads, boolean expandCorePoolSize) throws IllegalArgumentException {
 		if (selector == null || request == null || responseClass == null) throw new IllegalArgumentException("Parameter selector, request and responseClass can not be null!");
 
 		// Get channel objects.

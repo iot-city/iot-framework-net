@@ -12,7 +12,7 @@ import org.iotcity.iot.framework.net.channel.NetService;
  * @author ardon
  * @date 2021-06-17
  */
-public interface NetIO<READER, SENDER> {
+public interface NetIO<READER extends NetReader, SENDER extends NetSender> {
 
 	/**
 	 * Gets the network service of this I/O object (returns not null).

@@ -7,11 +7,11 @@ import org.iotcity.iot.framework.net.FrameworkNet;
 import org.iotcity.iot.framework.net.NetManager;
 import org.iotcity.iot.framework.net.channel.NetChannel;
 import org.iotcity.iot.framework.net.channel.NetServiceHandler;
-import org.iotcity.iot.framework.net.event.NetEventFactory;
 import org.iotcity.iot.framework.net.kafka.config.NetKafkaConfigChannel;
 import org.iotcity.iot.framework.net.kafka.config.NetKafkaConfigConsumer;
 import org.iotcity.iot.framework.net.kafka.config.NetKafkaConfigProducer;
-import org.iotcity.iot.framework.net.kafka.event.NetKafkaEventFactory;
+import org.iotcity.iot.framework.net.kafka.support.bus.NetKafkaEventFactory;
+import org.iotcity.iot.framework.net.support.bus.NetEventFactory;
 
 /**
  * The kafka service for message consumer and producer.
@@ -33,6 +33,8 @@ public final class NetKafkaService extends NetServiceHandler {
 	 */
 	public NetKafkaService(NetManager manager, String serviceID) throws IllegalArgumentException {
 		super(manager, serviceID);
+		// Publish a created event.
+		super.publishCreatedEvent();
 	}
 
 	@Override

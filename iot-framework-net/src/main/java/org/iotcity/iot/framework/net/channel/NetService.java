@@ -2,9 +2,9 @@ package org.iotcity.iot.framework.net.channel;
 
 import org.iotcity.iot.framework.core.config.Configurable;
 import org.iotcity.iot.framework.net.NetManager;
-import org.iotcity.iot.framework.net.event.NetEventFactory;
 import org.iotcity.iot.framework.net.io.NetInbound;
 import org.iotcity.iot.framework.net.io.NetOutbound;
+import org.iotcity.iot.framework.net.support.bus.NetEventFactory;
 
 /**
  * The network service.

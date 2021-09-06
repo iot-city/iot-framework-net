@@ -72,14 +72,14 @@ public abstract class NetInboundHandler<IO extends NetIO<?, ?>, DATA extends Net
 
 	/**
 	 * Filter the I/O object for this inbound message (returns true if the data can be read, otherwise, return false).
-	 * @param io The network I/O object.
+	 * @param io The network I/O object (not null).
 	 * @return Returns true if the data can be read, otherwise, return false.
 	 */
 	public abstract boolean filter(IO io);
 
 	/**
 	 * Read data from network I/O object (returns null when no data is read).
-	 * @param io The network I/O object.
+	 * @param io The network I/O object (not null).
 	 * @return The network data that has been read.
 	 * @throws Exception Throw an exception when an error is encountered.
 	 */

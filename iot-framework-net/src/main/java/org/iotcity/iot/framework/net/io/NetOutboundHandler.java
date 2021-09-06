@@ -72,16 +72,16 @@ public abstract class NetOutboundHandler<IO extends NetIO<?, ?>, DATA extends Ne
 
 	/**
 	 * Filter the I/O object for this outbound message (returns true if the data can be sent to remote end, otherwise, return false).
-	 * @param io The network I/O object.
-	 * @param data Data that needs to be sent to the remote end.
+	 * @param io The network I/O object (not null).
+	 * @param data Data that needs to be sent to the remote end (not null).
 	 * @return Returns true if the data can be sent to remote end, otherwise, return false.
 	 */
 	public abstract boolean filter(IO io, DATA data);
 
 	/**
 	 * Use the I/O object to send a message to the remote end.
-	 * @param io The network I/O object.
-	 * @param data Data that needs to be sent to the remote end.
+	 * @param io The network I/O object (not null).
+	 * @param data Data that needs to be sent to the remote end (not null).
 	 * @param timeout The timeout value in milliseconds. <br/>
 	 *            1. If it is sending a request data to the remote end, this value is the timeout value that waiting for a response data from remote end. <br/>
 	 *            2. If it is sending a response data to the remote end, this value will be 0.

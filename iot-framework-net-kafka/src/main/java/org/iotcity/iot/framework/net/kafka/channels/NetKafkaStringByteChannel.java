@@ -22,6 +22,8 @@ public final class NetKafkaStringByteChannel extends NetKafkaChannel<String, byt
 	 */
 	public NetKafkaStringByteChannel(NetServiceHandler service, String channelID, NetKafkaConfigConsumer consumerConfig, NetKafkaConfigProducer producerConfig) throws IllegalArgumentException {
 		super(service, channelID, consumerConfig, producerConfig);
+		// Publish a created event.
+		super.publishCreatedEvent();
 	}
 
 }

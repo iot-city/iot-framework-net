@@ -6,8 +6,8 @@ import org.iotcity.iot.framework.net.FrameworkNet;
 import org.iotcity.iot.framework.net.channel.NetChannel;
 import org.iotcity.iot.framework.net.channel.NetInboundObject;
 import org.iotcity.iot.framework.net.channel.NetOutboundObject;
-import org.iotcity.iot.framework.net.event.NetEventFactory;
-import org.iotcity.iot.framework.net.event.NetMessageErrorEvent;
+import org.iotcity.iot.framework.net.support.bus.NetEventFactory;
+import org.iotcity.iot.framework.net.support.bus.NetMessageErrorEvent;
 
 /**
  * Network data communication request object.
@@ -33,8 +33,11 @@ public final class NetRequester {
 	public final <REQ extends NetDataRequest, RES extends NetDataResponse> NetMessageStatus asyncRequest(NetIO<?, ?> io, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
 		if (io == null || request == null || responseClass == null) throw new IllegalArgumentException("Parameter io, request and responseClass can not be null!");
 
+		// Get request data class.
+		Class<?> requestClass = request.getClass();
 		// Gets the channel of I/O object.
 		NetChannel channel = io.getChannel();
+
 		// Check channel and service state.
 		if (channel.isClosed() || io.getService().isStopped()) {
 			// Close the channel.
@@ -48,10 +51,15 @@ public final class NetRequester {
 			}
 			// Return the close state.
 			return NetMessageStatus.CHANNEL_CLOSED;
+		} else if (io.getSender() == null) {
+			// Log error message.
+			FrameworkNet.getLogger().warn(FrameworkNet.getLocale().text("net.message.no.sender", io.getClass().getName(), requestClass.getName()));
+			// Publish an error event.
+			publishErrorEvent(NetMessageDirection.TO_REMOTE_REQUEST, io, request, null, null, NetMessageStatus.NO_SENDER);
+			// Return no sender result.
+			return NetMessageStatus.NO_SENDER;
 		}
 
-		// Get request data class.
-		Class<?> requestClass = request.getClass();
 		// Fix timeout value.
 		timeout = channel.fixCallbackTimeout(timeout);
 
@@ -263,6 +271,17 @@ public final class NetRequester {
 	 * @return The network response result data.
 	 */
 	private final <REQ extends NetDataRequest, RES extends NetDataResponse> NetResponseResult<RES> readSyncResponse(NetIO<?, ?> io, REQ request, Class<RES> responseClass) throws IllegalArgumentException {
+
+		// Check reader object.
+		if (io.getReader() == null) {
+			// Log error message.
+			FrameworkNet.getLogger().warn(FrameworkNet.getLocale().text("net.message.no.reader", io.getClass().getName()));
+			// Publish an error event.
+			publishErrorEvent(NetMessageDirection.FROM_REMOTE_RESPONSE, io, request, null, null, NetMessageStatus.NO_READER);
+			// Return no reader result.
+			return new NetResponseResult<RES>(io, NetMessageStatus.NO_READER, null);
+		}
+
 		// Get inbounds.
 		NetInboundObject[] inbounds = io.getInbounds();
 		// Check inbounds.
@@ -327,8 +346,11 @@ public final class NetRequester {
 	public final <REQ extends NetDataRequest, RES extends NetDataResponse> NetResponseResult<RES> syncRequest(NetIO<?, ?> io, REQ request, Class<RES> responseClass, long timeout) throws IllegalArgumentException {
 		if (io == null || request == null || responseClass == null) throw new IllegalArgumentException("Parameter io, request and responseClass can not be null!");
 
+		// Get request data class.
+		Class<?> requestClass = request.getClass();
 		// Gets the channel of I/O object.
 		NetChannel channel = io.getChannel();
+
 		// Check channel and service state.
 		if (channel.isClosed() || io.getService().isStopped()) {
 			// Close the channel.
@@ -339,10 +361,15 @@ public final class NetRequester {
 			}
 			// Return the close state.
 			return new NetResponseResult<RES>(io, NetMessageStatus.CHANNEL_CLOSED, null);
+		} else if (io.getSender() == null) {
+			// Log error message.
+			FrameworkNet.getLogger().warn(FrameworkNet.getLocale().text("net.message.no.sender", io.getClass().getName(), requestClass.getName()));
+			// Publish an error event.
+			publishErrorEvent(NetMessageDirection.TO_REMOTE_REQUEST, io, request, null, null, NetMessageStatus.NO_SENDER);
+			// Return no sender result.
+			return new NetResponseResult<RES>(io, NetMessageStatus.NO_SENDER, null);
 		}
 
-		// Get request data class.
-		Class<?> requestClass = request.getClass();
 		// Fix timeout value.
 		timeout = channel.fixCallbackTimeout(timeout);
 
