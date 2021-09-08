@@ -3,11 +3,11 @@ package org.iotcity.iot.framework.net.support.actor;
 import java.io.Serializable;
 
 /**
- * Actor response data for network transmission.
+ * Actor response result data for network transmission.
  * @author ardon
- * @date 2021-08-29
+ * @date 2021-09-07
  */
-public class NetActorResponseData implements Serializable {
+public class NetActorResult implements Serializable {
 
 	// --------------------------- Static fields ----------------------------
 
@@ -18,10 +18,6 @@ public class NetActorResponseData implements Serializable {
 
 	// --------------------------- Public fields ----------------------------
 
-	/**
-	 * The application ID (not null or empty).
-	 */
-	public String app;
 	/**
 	 * Response status (refer to ActorResponseStatus.XXXX.ordinal()).
 	 */
@@ -34,33 +30,40 @@ public class NetActorResponseData implements Serializable {
 	 * Reference notes (usually used for program debugging, set to null if not required).
 	 */
 	public String ref;
-	/**
-	 * The business response data from method (optional).
-	 */
-	public Serializable data;
 
 	// --------------------------- Constructor ----------------------------
 
 	/**
-	 * Constructor for actor response data.
+	 * Constructor for actor response result.
 	 */
-	public NetActorResponseData() {
+	public NetActorResult() {
 	}
 
 	/**
-	 * Constructor for actor response data.
-	 * @param app The application ID (can not be null or empty).
+	 * Constructor for actor response result.
 	 * @param status Response status (refer to ActorResponseStatus.XXXX.ordinal()).
 	 * @param msg Response message (usually used in response to result prompt, set to null if not required).
 	 * @param ref Reference notes (usually used for program debugging, set to null if not required).
-	 * @param data The business response data from method (optional, set to null if not required).
 	 */
-	public NetActorResponseData(String app, int status, String msg, String ref, Serializable data) {
-		this.app = app;
+	public NetActorResult(int status, String msg, String ref) {
 		this.status = status;
 		this.msg = msg;
 		this.ref = ref;
-		this.data = data;
+	}
+
+	// --------------------------- Public methods ----------------------------
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{status=");
+		sb.append(status);
+		sb.append(", msg=\"");
+		sb.append(msg);
+		sb.append("\", ref=\"");
+		sb.append(ref);
+		sb.append("\"}");
+		return sb.toString();
 	}
 
 }

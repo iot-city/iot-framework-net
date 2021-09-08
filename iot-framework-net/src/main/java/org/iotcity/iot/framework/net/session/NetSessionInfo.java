@@ -7,7 +7,7 @@ import java.io.Serializable;
  * @author ardon
  * @date 2021-08-29
  */
-public class NetSessionInfo implements Serializable {
+public final class NetSessionInfo implements Serializable {
 
 	// --------------------------- Static fields ----------------------------
 
@@ -61,6 +61,25 @@ public class NetSessionInfo implements Serializable {
 		this.channelID = channelID;
 		this.groupID = groupID;
 		this.sessionID = sessionID;
+	}
+
+	// --------------------------- Public methods ----------------------------
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{serverID=\"");
+		sb.append(serverID);
+		sb.append("\", serviceID=\"");
+		sb.append(serviceID);
+		sb.append("\", channelID=\"");
+		sb.append(channelID);
+		sb.append("\", groupID=\"");
+		sb.append(groupID);
+		sb.append("\", sessionID=\"");
+		sb.append(sessionID);
+		sb.append("\"}");
+		return sb.toString();
 	}
 
 }

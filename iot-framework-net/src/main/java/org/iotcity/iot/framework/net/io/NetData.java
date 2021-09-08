@@ -1,8 +1,5 @@
 package org.iotcity.iot.framework.net.io;
 
-import org.iotcity.iot.framework.core.util.DataMap;
-import org.iotcity.iot.framework.core.util.helper.JavaHelper;
-
 /**
  * The network data for inbound and outbound.
  * @author ardon
@@ -14,10 +11,6 @@ public class NetData {
 	 * Indicates whether it is request data.
 	 */
 	private final boolean request;
-	/**
-	 * The network header map object.
-	 */
-	private DataMap headers = null;
 
 	/**
 	 * Constructor for network data.
@@ -33,15 +26,6 @@ public class NetData {
 	 */
 	public final boolean isRequest() {
 		return request;
-	}
-
-	/**
-	 * Gets the network header map object.
-	 */
-	public final DataMap getHeaders() {
-		if (headers != null) return headers;
-		headers = new DataMap(JavaHelper.getMapInitialCapacity(3));
-		return headers;
 	}
 
 }

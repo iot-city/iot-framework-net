@@ -1,40 +1,49 @@
-package org.iotcity.iot.framework.net.support.actor;
+package org.iotcity.iot.framework.net.kafka.support.actor;
 
 import java.io.Serializable;
 
 import org.iotcity.iot.framework.core.util.helper.JavaHelper;
-import org.iotcity.iot.framework.net.io.NetDataAsyncResponse;
+import org.iotcity.iot.framework.net.support.actor.NetActorResult;
 
 /**
- * Actor response for network transmission.
+ * Kafka actor response data for network transmission.
  * @author ardon
- * @date 2021-08-29
+ * @date 2021-09-08
  */
-public class NetActorResponse extends NetDataAsyncResponse {
+public final class NetKafkaActorResponseData implements Serializable {
+
+	// --------------------------- Static fields ----------------------------
+
+	/**
+	 * Version ID for serialized form.
+	 */
+	private static final long serialVersionUID = 1L;
 
 	// --------------------------- Public fields ----------------------------
 
 	/**
 	 * Actor response result (never null).
 	 */
-	public final NetActorResult result;
+	public NetActorResult result;
 	/**
 	 * The response data from actor method invoking (null if there is no response data).
 	 */
-	public final Serializable data;
+	public Serializable data;
 
 	// --------------------------- Constructor ----------------------------
 
 	/**
-	 * Constructor for actor response.
-	 * @param messageID The message ID of the paired message request and response (required, can not be null or an empty string).
+	 * Constructor for kafka actor response data.
+	 */
+	public NetKafkaActorResponseData() {
+	}
+
+	/**
+	 * Constructor for kafka actor response data.
 	 * @param result Actor response status result (required, can not be null).
 	 * @param data The actor response data from actor method invoking (optional, set it to null if there is no response data).
-	 * @throws IllegalArgumentException An error will be thrown when the parameter "messageID", "result" is null or empty.
 	 */
-	public NetActorResponse(String messageID, NetActorResult result, Serializable data) throws IllegalArgumentException {
-		super(messageID);
-		if (result == null) throw new IllegalArgumentException("Parameter result can not be null!");
+	public NetKafkaActorResponseData(NetActorResult result, Serializable data) {
 		this.result = result;
 		this.data = data;
 	}
@@ -44,9 +53,7 @@ public class NetActorResponse extends NetDataAsyncResponse {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("{messageID=\"");
-		sb.append(messageID);
-		sb.append("\", result=");
+		sb.append("{result=");
 		sb.append(result.toString());
 		sb.append(", data=");
 		JavaHelper.getDataPreview(data, sb);

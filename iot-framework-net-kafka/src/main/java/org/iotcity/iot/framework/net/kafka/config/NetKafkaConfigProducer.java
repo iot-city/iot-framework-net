@@ -10,6 +10,11 @@ import org.iotcity.iot.framework.core.util.config.PropertiesMap;
 public class NetKafkaConfigProducer {
 
 	/**
+	 * The producer callback consumer configuration.
+	 */
+	public NetKafkaConfigCallback calback;
+
+	/**
 	 * The producer config map (required, can not be null).<br/>
 	 * Valid configuration strings are documented here: <br/>
 	 * http://kafka.apache.org/documentation.html#producerconfigs

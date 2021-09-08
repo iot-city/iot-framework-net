@@ -137,8 +137,8 @@ public final class NetRequester {
 
 		}
 
-		// Get message queue key.
-		String queue = ((NetDataAsyncRequest) request).getMessageQueue();
+		// Get message ID.
+		String queue = ((NetDataAsyncRequest) request).getMessageID();
 		// Add callback to responser.
 		if (callback != null) io.getResponser().addCallback(io, queue, request, responseClass, callback, timeout);
 

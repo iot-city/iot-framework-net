@@ -33,12 +33,14 @@ public final class SerializableHelper {
 				try {
 					b.close();
 				} catch (Exception e) {
+					e.printStackTrace();
 				}
 			}
 			if (o != null) {
 				try {
 					o.close();
 				} catch (Exception e) {
+					e.printStackTrace();
 				}
 			}
 		}
@@ -65,12 +67,14 @@ public final class SerializableHelper {
 				try {
 					b.close();
 				} catch (Exception e) {
+					e.printStackTrace();
 				}
 			}
 			if (o != null) {
 				try {
 					o.close();
 				} catch (Exception e) {
+					e.printStackTrace();
 				}
 			}
 		}

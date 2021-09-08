@@ -93,7 +93,7 @@ public final class NetMessager implements NetMessageEventCallback {
 						// Get response data.
 						NetDataAsyncResponse response = (NetDataAsyncResponse) data;
 						// Process the asynchronous response data from the remote end.
-						io.getResponser().tryCallback(NetMessageDirection.FROM_REMOTE_RESPONSE, io, response.getMessageQueue(), response.getClass(), NetMessageStatus.OK, response);
+						io.getResponser().tryCallback(NetMessageDirection.FROM_REMOTE_RESPONSE, io, response.getMessageID(), response.getClass(), NetMessageStatus.OK, response);
 						// Return status.
 						return NetMessageStatus.OK;
 

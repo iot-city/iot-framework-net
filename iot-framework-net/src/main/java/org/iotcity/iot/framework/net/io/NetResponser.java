@@ -23,7 +23,7 @@ public final class NetResponser {
 	 */
 	private final Object lock = new Object();
 	/**
-	 * The callback data map (the key is the message queue key, the value is the responser data context).
+	 * The callback data map (the key is the message ID, the value is the responser data context).
 	 */
 	private final Map<String, NetResponserContext> map = new HashMap<>();
 	/**
@@ -42,20 +42,20 @@ public final class NetResponser {
 	 * @param <REQ> The request data type.
 	 * @param <RES> The response data type.
 	 * @param io The network input and output object (required, can not be null).
-	 * @param messageQueue The message queue key of the paired message request and response (required, can not be null or empty).
+	 * @param messageID The message ID of the paired message request and response (required, can not be null or empty).
 	 * @param request The request data object (required, can not be null).
 	 * @param responseClass The response data class (required, can not be null).
 	 * @param callback The asynchronous response callback processing object (required, can not be null).
 	 * @param timeout The timeout value in milliseconds that waiting for a response data callback (required, the value is greater than 0).
 	 */
-	public final <REQ extends NetDataRequest, RES extends NetDataResponse> void addCallback(NetIO<?, ?> io, String messageQueue, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) {
+	public final <REQ extends NetDataRequest, RES extends NetDataResponse> void addCallback(NetIO<?, ?> io, String messageID, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) {
 		NetResponserObject object = new NetResponserObject(io, request, responseClass, callback, timeout);
 		synchronized (lock) {
-			NetResponserContext context = map.get(messageQueue);
+			NetResponserContext context = map.get(messageID);
 			if (context == null) {
 				contextChanged = true;
-				context = new NetResponserContext(messageQueue, object);
-				map.put(messageQueue, context);
+				context = new NetResponserContext(messageID, object);
+				map.put(messageID, context);
 			} else {
 				context.add(object);
 			}
@@ -63,18 +63,41 @@ public final class NetResponser {
 	}
 
 	/**
+	 * Gets the request data from callback information (returns null if not found).
+	 * @param <REQ> The request data type.
+	 * @param <RES> The response data type.
+	 * @param messageID The message ID of the paired message request and response (required, can not be null or empty).
+	 * @param requestClass The request data class (required, can not be null).
+	 * @param responseClass The response data class (required, can not be null).
+	 * @return The request data object.
+	 */
+	public final <REQ extends NetDataRequest, RES extends NetDataResponse> REQ getRequest(String messageID, Class<REQ> requestClass, Class<RES> responseClass) {
+		if (requestClass == null || responseClass == null) return null;
+		NetResponserContext context = map.get(messageID);
+		if (context == null) return null;
+		NetResponserObject object = context.get(requestClass, responseClass);
+		if (object == null) {
+			return null;
+		} else {
+			@SuppressWarnings("unchecked")
+			REQ req = (REQ) object.request;
+			return req;
+		}
+	}
+
+	/**
 	 * Try to execute the response data callback processing.
 	 * @param direction The network message data transmission direction (required, not null).
 	 * @param io The network input and output object (required, can not be null).
-	 * @param messageQueue The message queue key of the paired message request and response (required, can not be null or empty).
+	 * @param messageID The message ID of the paired message request and response (required, can not be null or empty).
 	 * @param responseClass The response data class (required, can not be null, reference: NetDataResponse).
 	 * @param status The network message status (required, can not be null).
 	 * @param response The network response data object (optional, set it to null when the response is not required).
 	 * @return The number of successful callbacks.
 	 */
-	public final int tryCallback(NetMessageDirection direction, NetIO<?, ?> io, String messageQueue, Class<?> responseClass, NetMessageStatus status, NetDataResponse response) {
+	public final int tryCallback(NetMessageDirection direction, NetIO<?, ?> io, String messageID, Class<?> responseClass, NetMessageStatus status, NetDataResponse response) {
 		// Get the responser data context.
-		NetResponserContext context = map.get(messageQueue);
+		NetResponserContext context = map.get(messageID);
 		if (context == null) return 0;
 		// Get the responser data objects.
 		NetResponserObject[] objects = context.remove(responseClass);
@@ -209,9 +232,9 @@ public final class NetResponser {
 	final class NetResponserContext {
 
 		/**
-		 * The message queue key of the paired message request and response (not null or empty).
+		 * The message ID of the paired message request and response (not null or empty).
 		 */
-		private final String messageQueue;
+		private final String messageID;
 		/**
 		 * The array for responser data objects.
 		 */
@@ -219,11 +242,11 @@ public final class NetResponser {
 
 		/**
 		 * Constructor for responser object context.
-		 * @param messageQueue The message queue key of the paired message request and response (not null or empty).
+		 * @param messageID The message ID of the paired message request and response (not null or empty).
 		 * @param object The network asynchronous responser object (not null).
 		 */
-		NetResponserContext(String messageQueue, NetResponserObject object) {
-			this.messageQueue = messageQueue;
+		NetResponserContext(String messageID, NetResponserObject object) {
+			this.messageID = messageID;
 			array = new NetResponserObject[] {
 				object
 			};
@@ -245,6 +268,20 @@ public final class NetResponser {
 				newArray[len] = object;
 				array = newArray;
 			}
+		}
+
+		/**
+		 * Gets the response object by specified response class (returns null if not found).
+		 * @param requestClass The request data class (required, can not be null).
+		 * @param responseClass The response data class (not null).
+		 * @return The network asynchronous responser object.
+		 */
+		final NetResponserObject get(Class<?> requestClass, Class<?> responseClass) {
+			NetResponserObject[] objects = array;
+			for (NetResponserObject obj : objects) {
+				if (requestClass.isInstance(obj.request) && obj.responseClass.isAssignableFrom(responseClass)) return obj;
+			}
+			return null;
 		}
 
 		/**
@@ -270,7 +307,7 @@ public final class NetResponser {
 				synchronized (lock) {
 					if (array.length == 0) {
 						contextChanged = true;
-						map.remove(messageQueue);
+						map.remove(messageID);
 					}
 				}
 			}
@@ -301,7 +338,7 @@ public final class NetResponser {
 				synchronized (lock) {
 					if (array.length == 0) {
 						contextChanged = true;
-						map.remove(messageQueue);
+						map.remove(messageID);
 					}
 				}
 			}

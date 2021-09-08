@@ -1,4 +1,4 @@
-package org.iotcity.iot.framework.net.kafka.support.actor;
+package org.iotcity.iot.framework.net.kafka.support.actor.io;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -10,10 +10,12 @@ import org.iotcity.iot.framework.net.kafka.NetKafkaOutbound;
 import org.iotcity.iot.framework.net.kafka.NetKafkaSender;
 import org.iotcity.iot.framework.net.kafka.NetKafkaSenderCallback;
 import org.iotcity.iot.framework.net.kafka.NetKafkaSenderResult;
+import org.iotcity.iot.framework.net.kafka.NetKafkaTopicPartition;
+import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequest;
+import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequestData;
+import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorResponse;
+import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorResponseData;
 import org.iotcity.iot.framework.net.serialization.serializable.SerializableHelper;
-import org.iotcity.iot.framework.net.support.actor.NetActorRequestData;
-import org.iotcity.iot.framework.net.support.actor.NetActorResponse;
-import org.iotcity.iot.framework.net.support.actor.NetActorResponseData;
 
 /**
  * The network kafka actor outbound by using bytes encoding.
@@ -34,16 +36,19 @@ public class NetKafkaActorBytesOutbound extends NetKafkaOutbound<byte[], byte[],
 
 			// Gets request object.
 			NetKafkaActorRequest request = (NetKafkaActorRequest) data;
-			NetActorRequestData reqData = request.getData();
-			// Build topic string.
-			String topic = "APP-" + reqData.app.toUpperCase();
+			// Gets the partition information.
+			NetKafkaTopicPartition partition = request.partition;
 			// Gets message key.
-			String messageQueue = request.getMessageQueue();
-			byte[] keys = messageQueue.getBytes();
+			String messageID = request.getMessageID();
+			// Gets the callback information.
+			NetKafkaTopicPartition callback = request.callback == null ? sender.getCallback() : request.callback;
+			// Create request data.
+			NetKafkaActorRequestData reqData = new NetKafkaActorRequestData(request.header, request.command, request.params, callback);
 			// Gets message value.
 			byte[] values = SerializableHelper.serialize(reqData);
+			// Create a message record.
+			ProducerRecord<byte[], byte[]> record = new ProducerRecord<byte[], byte[]>(partition.topic, partition.partition, messageID.getBytes(), values);
 			// Send a record to kafka cluster.
-			ProducerRecord<byte[], byte[]> record = new ProducerRecord<byte[], byte[]>(topic, request.getPartition(), keys, values);
 			NetKafkaSenderResult result = sender.send(record, new NetKafkaSenderCallback() {
 
 				@Override
@@ -51,7 +56,7 @@ public class NetKafkaActorBytesOutbound extends NetKafkaOutbound<byte[], byte[],
 					// Determines whether to send data successfully.
 					if (status == NetMessageStatus.OK) return;
 					// Callback response status on failure.
-					io.getResponser().tryCallback(NetMessageDirection.TO_REMOTE_REQUEST, io, messageQueue, NetActorResponse.class, status, null);
+					io.getResponser().tryCallback(NetMessageDirection.TO_REMOTE_REQUEST, io, messageID, NetKafkaActorResponse.class, status, null);
 				}
 
 			});
@@ -61,17 +66,19 @@ public class NetKafkaActorBytesOutbound extends NetKafkaOutbound<byte[], byte[],
 
 			// Gets response object.
 			NetKafkaActorResponse response = (NetKafkaActorResponse) data;
-			NetActorResponseData resData = response.getData();
-			// Build topic string.
-			String topic = "APP-" + resData.app.toUpperCase();
+			// Gets the partition information.
+			NetKafkaTopicPartition partition = response.partition;
 			// Gets message key.
-			String messageQueue = response.getMessageQueue();
-			byte[] keys = messageQueue.getBytes();
+			String messageID = response.getMessageID();
+			// Create response data.
+			NetKafkaActorResponseData resData = new NetKafkaActorResponseData(response.result, response.data);
 			// Gets message value.
 			byte[] values = SerializableHelper.serialize(resData);
+			// Create a message record.
+			ProducerRecord<byte[], byte[]> record = new ProducerRecord<byte[], byte[]>(partition.topic, partition.partition, messageID.getBytes(), values);
 			// Send a record to kafka cluster.
-			ProducerRecord<byte[], byte[]> record = new ProducerRecord<byte[], byte[]>(topic, response.getPartition(), keys, values);
 			NetKafkaSenderResult result = sender.send(record);
+			// Return the status.
 			return result.getStatus();
 
 		}

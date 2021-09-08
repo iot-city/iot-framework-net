@@ -26,15 +26,21 @@ public final class NetKafkaSender<K, V> extends NetSenderHandler {
 	 * A Kafka client that publishes records to the Kafka cluster.
 	 */
 	private final KafkaProducer<K, V> producer;
+	/**
+	 * The producer callback partition information.
+	 */
+	private final NetKafkaTopicPartition callback;
 
 	/**
 	 * Constructor for the kafka message sender object.
 	 * @param channel The kafka channel for message consumer and producer.
 	 * @param producer A Kafka client that publishes records to the Kafka cluster.
+	 * @param callback The producer callback partition information.
 	 */
-	NetKafkaSender(NetKafkaChannel<K, V> channel, KafkaProducer<K, V> producer) {
+	NetKafkaSender(NetKafkaChannel<K, V> channel, KafkaProducer<K, V> producer, NetKafkaTopicPartition callback) {
 		this.channel = channel;
 		this.producer = producer;
+		this.callback = callback;
 	}
 
 	/**
@@ -42,6 +48,13 @@ public final class NetKafkaSender<K, V> extends NetSenderHandler {
 	 */
 	public KafkaProducer<K, V> getProducer() {
 		return producer;
+	}
+
+	/**
+	 * Gets the producer callback partition information (returns null if the callback data is not required).
+	 */
+	public NetKafkaTopicPartition getCallback() {
+		return callback;
 	}
 
 	/**

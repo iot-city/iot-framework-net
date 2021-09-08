@@ -1,7 +1,12 @@
 package org.iotcity.iot.framework.net.kafka.support.actor;
 
+import java.io.Serializable;
+
+import org.iotcity.iot.framework.core.util.helper.JavaHelper;
+import org.iotcity.iot.framework.core.util.helper.StringHelper;
+import org.iotcity.iot.framework.net.kafka.NetKafkaTopicPartition;
 import org.iotcity.iot.framework.net.support.actor.NetActorResponse;
-import org.iotcity.iot.framework.net.support.actor.NetActorResponseData;
+import org.iotcity.iot.framework.net.support.actor.NetActorResult;
 
 /**
  * Kafka actor response for network transmission.
@@ -10,28 +15,44 @@ import org.iotcity.iot.framework.net.support.actor.NetActorResponseData;
  */
 public final class NetKafkaActorResponse extends NetActorResponse {
 
+	// --------------------------- Public fields ----------------------------
+
 	/**
-	 * The partition from which the message is received or sent.
+	 * The partition the message is received or sent to (never null).
 	 */
-	private final Integer partition;
+	public final NetKafkaTopicPartition partition;
+
+	// --------------------------- Constructor ----------------------------
 
 	/**
 	 * Constructor for kafka actor response.
-	 * @param messageQueue The message queue key of the paired message request and response (required, can not be null or an empty string).
-	 * @param data The actor response data (required, can not be null).
-	 * @param partition The partition from which this message is received or sent (optional, set it to null if use the partition dynamically).
-	 * @throws IllegalArgumentException An error will be thrown when the parameter "messageQueue", "data" is null or empty.
+	 * @param messageID The message ID of the paired message request and response (required, can not be null or an empty string).
+	 * @param partition The partition the message is received or sent to (required, can not be null).
+	 * @param result Actor response status result (required, can not be null).
+	 * @param data The actor response data from actor method invoking (optional, set it to null if there is no response data).
+	 * @throws IllegalArgumentException An error will be thrown when one of the parameters "messageID", "partition", "partition.topic" or "result" is null or empty.
 	 */
-	public NetKafkaActorResponse(String messageQueue, NetActorResponseData data, Integer partition) throws IllegalArgumentException {
-		super(messageQueue, data);
+	public NetKafkaActorResponse(String messageID, NetKafkaTopicPartition partition, NetActorResult result, Serializable data) throws IllegalArgumentException {
+		super(messageID, result, data);
+		if (partition == null || StringHelper.isEmpty(partition.topic)) throw new IllegalArgumentException("Parameter partition and partition.topic can not be null or empty!");
 		this.partition = partition;
 	}
 
-	/**
-	 * The partition from which this message is received or sent (returns null if use the partition dynamically).
-	 */
-	public Integer getPartition() {
-		return partition;
+	// --------------------------- Public methods ----------------------------
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{messageID=\"");
+		sb.append(messageID);
+		sb.append("\", result=");
+		sb.append(result.toString());
+		sb.append(", data=");
+		JavaHelper.getDataPreview(data, sb);
+		sb.append(", partition=");
+		sb.append(partition.toString());
+		sb.append("}");
+		return sb.toString();
 	}
 
 }

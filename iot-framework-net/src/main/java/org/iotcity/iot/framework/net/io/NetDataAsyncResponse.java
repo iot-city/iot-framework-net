@@ -10,25 +10,25 @@ import org.iotcity.iot.framework.core.util.helper.StringHelper;
 public class NetDataAsyncResponse extends NetDataResponse {
 
 	/**
-	 * The message queue key of the paired message request and response.
+	 * The message ID of the paired message request and response.
 	 */
-	private final String messageQueue;
+	protected final String messageID;
 
 	/**
 	 * Constructor for asynchronous response data.
-	 * @param messageQueue The message queue key of the paired message request and response.
-	 * @throws IllegalArgumentException An error will be thrown when the parameter "messageQueue" is null or empty.
+	 * @param messageID The message ID of the paired message request and response.
+	 * @throws IllegalArgumentException An error will be thrown when the parameter "messageID" is null or empty.
 	 */
-	public NetDataAsyncResponse(String messageQueue) throws IllegalArgumentException {
-		if (StringHelper.isEmpty(messageQueue)) throw new IllegalArgumentException("Parameter messageQueue can not be null or empty!");
-		this.messageQueue = messageQueue;
+	public NetDataAsyncResponse(String messageID) throws IllegalArgumentException {
+		if (StringHelper.isEmpty(messageID)) throw new IllegalArgumentException("Parameter messageID can not be null or empty!");
+		this.messageID = messageID;
 	}
 
 	/**
-	 * Gets the message queue key of the paired message request and response (returns not null).
+	 * Gets the message ID of the paired message request and response (returns not null).
 	 */
-	public final String getMessageQueue() {
-		return messageQueue;
+	public final String getMessageID() {
+		return messageID;
 	}
 
 }
