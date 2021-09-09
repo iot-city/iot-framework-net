@@ -2,6 +2,7 @@ package org.iotcity.iot.framework.net.serialization.json.impls;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 
 import org.iotcity.iot.framework.core.logging.Logger;
 import org.iotcity.iot.framework.core.util.config.PropertiesMap;
@@ -24,24 +25,29 @@ public final class FastJSON implements JSON {
 	/**
 	 * To JSON string method.
 	 */
-	private Method toJSONMethod;
+	private static Method toJSONMethod;
 	/**
 	 * To java object method.
 	 */
-	private Method toObjectMethod;
+	private static Method toObjectMethod;
+	/**
+	 * To java object by type method.
+	 */
+	private static Method toObjectMethodByType;
 	/**
 	 * To JSON array method.
 	 */
-	private Method toArrayMethod;
+	private static Method toArrayMethod;
 	/**
 	 * Get array object method.
 	 */
-	private Method getArrayObjectMethod;
-
+	private static Method getArrayObjectMethod;
 	/**
-	 * Constructor for FastJSON converter.
+	 * Get array object by type method.
 	 */
-	public FastJSON() {
+	private static Method getArrayObjectMethodByType;
+
+	static {
 		try {
 			Class<?> clazz = Class.forName("com.alibaba.fastjson.JSON");
 			toJSONMethod = clazz.getMethod("toJSONString", new Class[] {
@@ -51,6 +57,12 @@ public final class FastJSON implements JSON {
 				String.class,
 				Class.class
 			});
+			Class<?> features = Class.forName("[Lcom.alibaba.fastjson.parser.Feature;");
+			toObjectMethodByType = clazz.getMethod("parseObject", new Class[] {
+				String.class,
+				Type.class,
+				features
+			});
 			toArrayMethod = clazz.getMethod("parseArray", new Class[] {
 				String.class
 			});
@@ -59,9 +71,19 @@ public final class FastJSON implements JSON {
 				int.class,
 				Class.class
 			});
+			getArrayObjectMethodByType = clazz.getMethod("getObject", new Class[] {
+				int.class,
+				Type.class
+			});
 		} catch (Exception e) {
-			logger.error(e);
+			FrameworkNet.getLogger().error(e);
 		}
+	}
+
+	/**
+	 * Constructor for FastJSON converter.
+	 */
+	public FastJSON() {
 	}
 
 	@Override
@@ -96,6 +118,22 @@ public final class FastJSON implements JSON {
 	}
 
 	@Override
+	public <T> T toJavaObject(Type type, String str) {
+		try {
+			@SuppressWarnings("unchecked")
+			T obj = (T) toObjectMethodByType.invoke(null, new Object[] {
+				str,
+				type,
+				null
+			});
+			return obj;
+		} catch (Exception e) {
+			logger.error(e);
+			return null;
+		}
+	}
+
+	@Override
 	public <T> T[] toJavaArray(Class<T> arrayClass, Class<?>[] classes, String str) {
 		if (classes == null || classes.length == 0 || StringHelper.isEmpty(str)) return null;
 		try {
@@ -105,6 +143,25 @@ public final class FastJSON implements JSON {
 			for (int i = 0, c = rets.length; i < c; i++) {
 				@SuppressWarnings("unchecked")
 				T obj = (T) getArrayObjectMethod.invoke(jsonArray, i, classes[i]);
+				rets[i] = obj;
+			}
+			return rets;
+		} catch (Exception e) {
+			logger.error(e);
+			return null;
+		}
+	}
+
+	@Override
+	public <T> T[] toJavaArray(Class<T> arrayClass, Type[] types, String str) {
+		if (types == null || types.length == 0 || StringHelper.isEmpty(str)) return null;
+		try {
+			Object jsonArray = toArrayMethod.invoke(null, str);
+			@SuppressWarnings("unchecked")
+			T[] rets = (T[]) Array.newInstance(arrayClass, types.length);
+			for (int i = 0, c = rets.length; i < c; i++) {
+				@SuppressWarnings("unchecked")
+				T obj = (T) getArrayObjectMethodByType.invoke(jsonArray, i, types[i]);
 				rets[i] = obj;
 			}
 			return rets;

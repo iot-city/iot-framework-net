@@ -1,5 +1,7 @@
 package org.iotcity.iot.framework.net.serialization.json.impls;
 
+import java.lang.reflect.Type;
+
 import org.iotcity.iot.framework.core.util.config.PropertiesMap;
 import org.iotcity.iot.framework.net.serialization.json.JSON;
 
@@ -25,7 +27,17 @@ public final class NoneJSON implements JSON {
 	}
 
 	@Override
-	public <T> T[] toJavaArray(Class<T> arrayClass, Class<?>[] classes, String json) {
+	public <T> T toJavaObject(Type type, String str) {
+		return null;
+	}
+
+	@Override
+	public <T> T[] toJavaArray(Class<T> arrayClass, Class<?>[] classes, String str) {
+		return null;
+	}
+
+	@Override
+	public <T> T[] toJavaArray(Class<T> arrayClass, Type[] types, String str) {
 		return null;
 	}
 

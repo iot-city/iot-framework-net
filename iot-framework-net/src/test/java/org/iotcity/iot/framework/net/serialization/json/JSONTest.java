@@ -1,6 +1,9 @@
 package org.iotcity.iot.framework.net.serialization.json;
 
 import java.io.Serializable;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.iotcity.iot.framework.core.util.helper.JavaHelper;
 import org.iotcity.iot.framework.net.serialization.json.data.ClassA;
@@ -14,6 +17,7 @@ import junit.framework.TestCase;
  */
 public class JSONTest extends TestCase {
 
+	@SuppressWarnings("unchecked")
 	public void testJSON() {
 
 		JavaHelper.log("----------------------------- TEST JSON FACTORY -----------------------------");
@@ -30,6 +34,21 @@ public class JSONTest extends TestCase {
 		JavaHelper.log("Object to JSON string A: " + str);
 		ClassA aobj = json.toJavaObject(ClassA.class, str);
 		JavaHelper.log("JSON string to Object A: " + aobj);
+
+		JavaHelper.log("----------------------------- TEST JSON OBJECT TYPE -----------------------------");
+
+		List<ClassA> list = new ArrayList<>();
+		list.add(new ClassA("A1", "A1-DECS"));
+		list.add(new ClassA("A2", "A2-DECS"));
+		str = json.toJSONString(list);
+		JavaHelper.log("List to JSON string: " + str);
+		list = json.toJavaObject(new JSONTypeReference<List<ClassA>>() {
+		}.getType(), str);
+		if (list != null) {
+			JavaHelper.log("JSON string to List: " + list.size() + "; A1: " + list.get(0) + "; A2: " + list.get(1));
+		} else {
+			JavaHelper.log("JSON string to List: null");
+		}
 
 		JavaHelper.log("----------------------------- TEST JSON ARRAY SIMPLE -----------------------------");
 
@@ -60,6 +79,31 @@ public class JSONTest extends TestCase {
 			JavaHelper.log("JSON string to Array: " + array2.length + "; A: " + array2[0] + "; B: " + array2[1]);
 		} else {
 			JavaHelper.log("JSON string to Array: null");
+		}
+
+		JavaHelper.log("----------------------------- TEST JSON ARRAY MULTIPLE LIST -----------------------------");
+
+		List<ClassA> listA = new ArrayList<>();
+		listA.add(new ClassA("A1", "A1-DECS"));
+		listA.add(new ClassA("A2", "A2-DECS"));
+		List<ClassB> listB = new ArrayList<>();
+		listB.add(new ClassB(1, "B1", "B1-DESC"));
+		listB.add(new ClassB(2, "B2", "B2-DESC"));
+		str = json.toJSONString(new Object[] {
+			listA,
+			listB
+		});
+		JavaHelper.log("Array list to JSON string: " + str);
+		Object[] objects = json.toJavaArray(Object.class, new Type[] {
+			new JSONTypeReference<List<ClassA>>() {
+			}.getType(),
+			new JSONTypeReference<List<ClassB>>() {
+			}.getType()
+		}, str);
+		if (objects != null) {
+			JavaHelper.log("JSON string to Array list: " + objects.length + "; A: " + ((List<ClassA>) objects[0]).get(0) + "; B: " + ((List<ClassB>) objects[1]).get(0));
+		} else {
+			JavaHelper.log("JSON string to Array list: null");
 		}
 
 		JavaHelper.log("----------------------------- TEST JSON FACTORY COMPLETE -----------------------------");
