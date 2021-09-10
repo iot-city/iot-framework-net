@@ -130,6 +130,10 @@ public abstract class NetChannelHandler implements NetChannel {
 	 */
 	private final AtomicLong reopenTaskID = new AtomicLong(0);
 	/**
+	 * Unique sequence number for each channel opened.
+	 */
+	private long openingID = 0;
+	/**
 	 * The inbounds and outbounds lock for the map.
 	 */
 	private final Object boundsLock = new Object();
@@ -494,11 +498,11 @@ public abstract class NetChannelHandler implements NetChannel {
 	// --------------------------- Open and close methods ----------------------------
 
 	@Override
-	public boolean open() throws Exception {
-		if (service.isStopped()) return false;
-		if (state == NetChannelState.OPENED) return true;
+	public long open() throws Exception {
+		if (service.isStopped()) return -1;
+		if (state == NetChannelState.OPENED) return openingID;
 		synchronized (stateLock) {
-			if (state == NetChannelState.OPENED) return true;
+			if (state == NetChannelState.OPENED) return openingID;
 
 			// Logs a message.
 			logger.info(locale.text("net.service.channel.opening", channelID, service.serviceID));
@@ -509,7 +513,7 @@ public abstract class NetChannelHandler implements NetChannel {
 			NetChannelEvent event = factory.createChannelEvent(this, this, NetChannelState.OPENING);
 			if (publisher.publish(event).isCancelled()) {
 				logger.warn(locale.text("net.service.channel.opening.cancelled", channelID, service.serviceID));
-				return false;
+				return -1;
 			}
 
 			// Reset to created state after closing.
@@ -517,15 +521,18 @@ public abstract class NetChannelHandler implements NetChannel {
 			// Reset destroyed status.
 			if (destroyed) destroyed = false;
 
+			// Increment unique sequence number.
+			openingID++;
+
 			try {
 				// Do open logic.
-				if (!doOpen()) {
+				if (!doOpen(openingID)) {
 					// Logs a message.
 					logger.warn(locale.text("net.service.channel.open.failed", channelID, service.serviceID));
 					// Retry opening this channel.
 					retryOpen();
 					// Return false at this time.
-					return false;
+					return -1;
 				}
 			} catch (Exception e) {
 				// Logs a message.
@@ -533,7 +540,7 @@ public abstract class NetChannelHandler implements NetChannel {
 				// Retry opening this channel.
 				retryOpen();
 				// Return false at this time.
-				return false;
+				return -1;
 			}
 
 			// Set opened state.
@@ -552,9 +559,10 @@ public abstract class NetChannelHandler implements NetChannel {
 				this.close();
 			}
 
+			// Return opened successfully.
+			return openingID;
+
 		}
-		// Return opened successfully.
-		return true;
 	}
 
 	@Override
@@ -603,6 +611,15 @@ public abstract class NetChannelHandler implements NetChannel {
 		}
 		// Return closed successfully.
 		return true;
+	}
+
+	@Override
+	public boolean closeFor(long openingID) throws Exception {
+		if (this.openingID != openingID || state == NetChannelState.CLOSED) return false;
+		synchronized (stateLock) {
+			if (this.openingID != openingID) return false;
+			return this.close();
+		}
 	}
 
 	@Override
@@ -717,10 +734,11 @@ public abstract class NetChannelHandler implements NetChannel {
 
 	/**
 	 * Do open channel processing logic.
+	 * @param openingID Unique sequence number for channel opened.
 	 * @return Returns whether the channel was successfully opened.
 	 * @throws Exception An error will be thrown when an exception is encountered during execution.
 	 */
-	protected abstract boolean doOpen() throws Exception;
+	protected abstract boolean doOpen(long openingID) throws Exception;
 
 	/**
 	 * Do reopen channel processing logic (you can call open() in this method).

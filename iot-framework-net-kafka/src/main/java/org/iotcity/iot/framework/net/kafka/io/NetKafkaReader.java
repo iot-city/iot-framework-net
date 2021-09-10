@@ -1,4 +1,4 @@
-package org.iotcity.iot.framework.net.kafka;
+package org.iotcity.iot.framework.net.kafka.io;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -27,7 +27,7 @@ public final class NetKafkaReader<K, V> extends NetReaderHandler {
 	 * @param consumer A client that consumes records from a Kafka cluster.
 	 * @param record A key/value pair to be received from Kafka.
 	 */
-	NetKafkaReader(KafkaConsumer<K, V> consumer, ConsumerRecord<K, V> record) {
+	public NetKafkaReader(KafkaConsumer<K, V> consumer, ConsumerRecord<K, V> record) {
 		this.consumer = consumer;
 		this.record = record;
 	}

@@ -93,10 +93,10 @@ public final class NetManager implements Configurable<NetConfig> {
 			String mac = SystemHelper.getLocalMac(false);
 			if (StringHelper.isEmpty(mac)) {
 				// Set to template UUID.
-				serverID = StringHelper.getUUID();
+				this.serverID = StringHelper.getUUID();
 			} else {
 				// Set to IP and MAP string.
-				serverID = ip + "[" + mac + "]";
+				this.serverID = ip + "[" + mac + "]";
 			}
 		}
 		// Set the task handler.
@@ -162,6 +162,8 @@ public final class NetManager implements Configurable<NetConfig> {
 		// Do session manager configuration.
 		this.sessions.config(data.sessions, reset);
 
+		// Get task handler.
+		TaskHandler handler = taskHandler;
 		// Do services configuration.
 		NetConfigService[] svcsConfig = data.services;
 		if (svcsConfig != null && svcsConfig.length > 0) {
@@ -198,8 +200,6 @@ public final class NetManager implements Configurable<NetConfig> {
 
 				// Start service automatically.
 				if (config.autoStart) {
-					// Get task handler.
-					TaskHandler handler = taskHandler;
 					// Get task service.
 					final NetService taskService = service;
 					// Create service starting task.
@@ -219,12 +219,24 @@ public final class NetManager implements Configurable<NetConfig> {
 					if (config.autoStartDelay > 0) {
 						handler.addDelayTask(task, config.autoStartDelay);
 					} else {
-						handler.run(task);
+						handler.addDelayTask(task, 100);
 					}
 				}
 			}
 		}
-		// Return true by default.
+
+		// Task for log message.
+		handler.addDelayTask(new Runnable() {
+
+			@Override
+			public void run() {
+				// Logs a message.
+				FrameworkNet.getLogger().info(FrameworkNet.getLocale().text("net.manager.config.success", serverID));
+			}
+
+		}, 50);
+
+		// Return true by default.r
 		return true;
 	}
 

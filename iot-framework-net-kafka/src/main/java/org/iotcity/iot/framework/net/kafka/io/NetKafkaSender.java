@@ -1,4 +1,4 @@
-package org.iotcity.iot.framework.net.kafka;
+package org.iotcity.iot.framework.net.kafka.io;
 
 import java.util.concurrent.Future;
 
@@ -8,6 +8,8 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.iotcity.iot.framework.net.io.NetMessageStatus;
 import org.iotcity.iot.framework.net.io.NetSenderHandler;
+import org.iotcity.iot.framework.net.kafka.NetKafkaChannel;
+import org.iotcity.iot.framework.net.kafka.NetKafkaTopicPartition;
 
 /**
  * The kafka message sender object.
@@ -37,7 +39,7 @@ public final class NetKafkaSender<K, V> extends NetSenderHandler {
 	 * @param producer A Kafka client that publishes records to the Kafka cluster.
 	 * @param callback The producer callback partition information.
 	 */
-	NetKafkaSender(NetKafkaChannel<K, V> channel, KafkaProducer<K, V> producer, NetKafkaTopicPartition callback) {
+	public NetKafkaSender(NetKafkaChannel<K, V> channel, KafkaProducer<K, V> producer, NetKafkaTopicPartition callback) {
 		this.channel = channel;
 		this.producer = producer;
 		this.callback = callback;

@@ -9,6 +9,7 @@ import org.iotcity.iot.framework.core.util.config.PropertiesMap;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
 import org.iotcity.iot.framework.net.FrameworkNet;
 import org.iotcity.iot.framework.net.serialization.json.JSON;
+import org.iotcity.iot.framework.net.serialization.json.JSONFactory;
 
 /**
  * The JSON converter for FastJSON.
@@ -48,35 +49,39 @@ public final class FastJSON implements JSON {
 	private static Method getArrayObjectMethodByType;
 
 	static {
-		try {
-			Class<?> clazz = Class.forName("com.alibaba.fastjson.JSON");
-			toJSONMethod = clazz.getMethod("toJSONString", new Class[] {
-				Object.class
-			});
-			toObjectMethod = clazz.getMethod("parseObject", new Class[] {
-				String.class,
-				Class.class
-			});
-			Class<?> features = Class.forName("[Lcom.alibaba.fastjson.parser.Feature;");
-			toObjectMethodByType = clazz.getMethod("parseObject", new Class[] {
-				String.class,
-				Type.class,
-				features
-			});
-			toArrayMethod = clazz.getMethod("parseArray", new Class[] {
-				String.class
-			});
-			clazz = Class.forName("com.alibaba.fastjson.JSONArray");
-			getArrayObjectMethod = clazz.getMethod("getObject", new Class[] {
-				int.class,
-				Class.class
-			});
-			getArrayObjectMethodByType = clazz.getMethod("getObject", new Class[] {
-				int.class,
-				Type.class
-			});
-		} catch (Exception e) {
-			FrameworkNet.getLogger().error(e);
+		// Check for valid class.
+		if (JSONFactory.getJSONClass().equals(FastJSON.class)) {
+			try {
+				// Gets JSON methods.
+				Class<?> clazz = Class.forName("com.alibaba.fastjson.JSON");
+				toJSONMethod = clazz.getMethod("toJSONString", new Class[] {
+					Object.class
+				});
+				toObjectMethod = clazz.getMethod("parseObject", new Class[] {
+					String.class,
+					Class.class
+				});
+				Class<?> features = Class.forName("[Lcom.alibaba.fastjson.parser.Feature;");
+				toObjectMethodByType = clazz.getMethod("parseObject", new Class[] {
+					String.class,
+					Type.class,
+					features
+				});
+				toArrayMethod = clazz.getMethod("parseArray", new Class[] {
+					String.class
+				});
+				clazz = Class.forName("com.alibaba.fastjson.JSONArray");
+				getArrayObjectMethod = clazz.getMethod("getObject", new Class[] {
+					int.class,
+					Class.class
+				});
+				getArrayObjectMethodByType = clazz.getMethod("getObject", new Class[] {
+					int.class,
+					Type.class
+				});
+			} catch (Exception e) {
+				FrameworkNet.getLogger().error(e);
+			}
 		}
 	}
 

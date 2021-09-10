@@ -5,12 +5,12 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.iotcity.iot.framework.net.io.NetData;
 import org.iotcity.iot.framework.net.io.NetMessageDirection;
 import org.iotcity.iot.framework.net.io.NetMessageStatus;
-import org.iotcity.iot.framework.net.kafka.NetKafkaIO;
-import org.iotcity.iot.framework.net.kafka.NetKafkaOutbound;
-import org.iotcity.iot.framework.net.kafka.NetKafkaSender;
-import org.iotcity.iot.framework.net.kafka.NetKafkaSenderCallback;
-import org.iotcity.iot.framework.net.kafka.NetKafkaSenderResult;
+import org.iotcity.iot.framework.net.io.NetOutboundHandler;
 import org.iotcity.iot.framework.net.kafka.NetKafkaTopicPartition;
+import org.iotcity.iot.framework.net.kafka.io.NetKafkaIOStringBytes;
+import org.iotcity.iot.framework.net.kafka.io.NetKafkaSender;
+import org.iotcity.iot.framework.net.kafka.io.NetKafkaSenderCallback;
+import org.iotcity.iot.framework.net.kafka.io.NetKafkaSenderResult;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequest;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequestData;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorResponse;
@@ -22,15 +22,15 @@ import org.iotcity.iot.framework.net.serialization.serializable.SerializableHelp
  * @author ardon
  * @date 2021-09-05
  */
-public final class NetKafkaActorStringBytesOutbound extends NetKafkaOutbound<String, byte[], NetData> {
+public final class NetKafkaActorStringBytesOutbound extends NetOutboundHandler<NetKafkaIOStringBytes, NetData> {
 
 	@Override
-	public boolean filter(NetKafkaIO<String, byte[]> io, NetData data) {
+	public boolean filter(NetKafkaIOStringBytes io, NetData data) {
 		return true;
 	}
 
 	@Override
-	public NetMessageStatus send(NetKafkaIO<String, byte[]> io, NetData data, long timeout) throws Exception {
+	public NetMessageStatus send(NetKafkaIOStringBytes io, NetData data, long timeout) throws Exception {
 		NetKafkaSender<String, byte[]> sender = io.getSender();
 		if (data.isRequest()) {
 

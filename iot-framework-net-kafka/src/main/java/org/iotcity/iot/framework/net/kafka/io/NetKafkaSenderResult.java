@@ -1,4 +1,4 @@
-package org.iotcity.iot.framework.net.kafka;
+package org.iotcity.iot.framework.net.kafka.io;
 
 import java.util.concurrent.Future;
 

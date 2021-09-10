@@ -2,10 +2,10 @@ package org.iotcity.iot.framework.net.kafka.support.actor.io;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.iotcity.iot.framework.net.io.NetData;
-import org.iotcity.iot.framework.net.kafka.NetKafkaIO;
-import org.iotcity.iot.framework.net.kafka.NetKafkaInbound;
-import org.iotcity.iot.framework.net.kafka.NetKafkaReader;
+import org.iotcity.iot.framework.net.io.NetInboundHandler;
 import org.iotcity.iot.framework.net.kafka.NetKafkaTopicPartition;
+import org.iotcity.iot.framework.net.kafka.io.NetKafkaIOBytes;
+import org.iotcity.iot.framework.net.kafka.io.NetKafkaReader;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequest;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequestData;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorResponse;
@@ -17,15 +17,15 @@ import org.iotcity.iot.framework.net.serialization.serializable.SerializableHelp
  * @author ardon
  * @date 2021-08-29
  */
-public final class NetKafkaActorBytesInbound extends NetKafkaInbound<byte[], byte[], NetData> {
+public final class NetKafkaActorBytesInbound extends NetInboundHandler<NetKafkaIOBytes, NetData> {
 
 	@Override
-	public boolean filter(NetKafkaIO<byte[], byte[]> io) {
+	public boolean filter(NetKafkaIOBytes io) {
 		return true;
 	}
 
 	@Override
-	public NetData read(NetKafkaIO<byte[], byte[]> io) throws Exception {
+	public NetData read(NetKafkaIOBytes io) throws Exception {
 		// Gets the record.
 		NetKafkaReader<byte[], byte[]> reader = io.getReader();
 		ConsumerRecord<byte[], byte[]> record = reader.getRecord();

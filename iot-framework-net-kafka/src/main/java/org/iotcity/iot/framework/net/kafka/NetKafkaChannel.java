@@ -27,6 +27,7 @@ import org.iotcity.iot.framework.net.kafka.config.NetKafkaConfigCallback;
 import org.iotcity.iot.framework.net.kafka.config.NetKafkaConfigConsumer;
 import org.iotcity.iot.framework.net.kafka.config.NetKafkaConfigPartition;
 import org.iotcity.iot.framework.net.kafka.config.NetKafkaConfigProducer;
+import org.iotcity.iot.framework.net.kafka.io.NetKafkaSender;
 
 /**
  * The kafka channel for message consumer and producer.
@@ -35,12 +36,12 @@ import org.iotcity.iot.framework.net.kafka.config.NetKafkaConfigProducer;
  * @author ardon
  * @date 2021-06-16
  */
-public class NetKafkaChannel<K, V> extends NetChannelHandler {
+public abstract class NetKafkaChannel<K, V> extends NetChannelHandler {
 
 	/**
-	 * A kafka client that publishes records to the kafka cluster.
+	 * The kafka producer configuration.
 	 */
-	private final KafkaProducer<K, V> producer;
+	private final PropertiesMap<Object> producerConfig;
 	/**
 	 * The producer callback partition information.
 	 */
@@ -53,14 +54,11 @@ public class NetKafkaChannel<K, V> extends NetChannelHandler {
 	 * The configuration for request consumer.
 	 */
 	private final ConsumerConfig consumerConfig;
+
 	/**
-	 * The kafka sender object.
+	 * The kafka message sender object.
 	 */
-	private final NetKafkaSender<K, V> sender;
-	/**
-	 * The kafka I/O object for remote requests.
-	 */
-	private final NetKafkaIO<K, V> toRemoteIO;
+	private NetKafkaSender<K, V> sender;
 	/**
 	 * The consumer runnable object for callback.
 	 */
@@ -84,11 +82,11 @@ public class NetKafkaChannel<K, V> extends NetChannelHandler {
 		// Check producer configuration.
 		if (producerConfig != null && producerConfig.props != null) {
 
-			// Create producer.
-			this.producer = new KafkaProducer<K, V>(producerConfig.props);
+			// Set producer configuration.
+			this.producerConfig = producerConfig.props;
 
 			// Initialize callback information.
-			NetKafkaConfigCallback cbk = producerConfig.calback;
+			NetKafkaConfigCallback cbk = producerConfig.callback;
 			if (cbk == null || StringHelper.isEmpty(cbk.topic) || cbk.partition < 0 || cbk.props == null) {
 				this.callback = null;
 				this.cllbackConfig = null;
@@ -105,16 +103,11 @@ public class NetKafkaChannel<K, V> extends NetChannelHandler {
 					partition
 				}, cbk.pollTimeout, cbk.closeTimeout, cbk.props);
 			}
-			// Create sender.
-			this.sender = new NetKafkaSender<>(this, producer, callback);
-			this.toRemoteIO = new NetKafkaIO<>(this, null, sender);
 
 		} else {
-			this.producer = null;
+			this.producerConfig = null;
 			this.callback = null;
 			this.cllbackConfig = null;
-			this.sender = null;
-			this.toRemoteIO = null;
 		}
 
 		// Check consumer configuration.
@@ -133,28 +126,35 @@ public class NetKafkaChannel<K, V> extends NetChannelHandler {
 		}
 
 		// Check available.
-		if (this.consumerConfig == null || producer == null) {
+		if (this.consumerConfig == null || this.producerConfig == null) {
 			throw new IllegalArgumentException("The parameter configuration of consumerConfig or producerConfig is invalid!");
 		}
 
 	}
 
-	@Override
-	public final NetIO<?, ?> getToRemoteIO() {
-		return toRemoteIO;
+	/**
+	 * Gets the kafka message sender object (returns null if there is no sender).
+	 */
+	protected NetKafkaSender<K, V> getSender() {
+		return this.sender;
 	}
 
 	@Override
-	protected final boolean doOpen() throws Exception {
+	protected final boolean doOpen(long openingID) throws Exception {
+		// Create a producer sender object.
+		if (producerConfig != null && sender == null) {
+			// Create sender.
+			sender = new NetKafkaSender<>(this, new KafkaProducer<K, V>(producerConfig), callback);
+		}
 		// Create and run message consumer.
 		if (consumerConfig != null && (consumerRunnable == null || consumerRunnable.isStopped())) {
-			consumerRunnable = new ConsumerRunnable<>(this, consumerConfig, sender);
+			consumerRunnable = new ConsumerRunnable<>(this, consumerConfig, openingID);
 			Thread t = new Thread(consumerRunnable, "KafkaChannel-Message-" + this.channelID);
 			t.start();
 		}
 		// Create and run callback consumer.
 		if (cllbackConfig != null && (callbackRunnable == null || callbackRunnable.isStopped())) {
-			callbackRunnable = new ConsumerRunnable<>(this, cllbackConfig, sender);
+			callbackRunnable = new ConsumerRunnable<>(this, cllbackConfig, openingID);
 			Thread t = new Thread(callbackRunnable, "KafkaChannel-Callback-" + this.channelID);
 			t.start();
 		}
@@ -163,7 +163,7 @@ public class NetKafkaChannel<K, V> extends NetChannelHandler {
 
 	@Override
 	protected final boolean doReopen() throws Exception {
-		return this.open();
+		return this.open() > 0;
 	}
 
 	@Override
@@ -179,15 +179,24 @@ public class NetKafkaChannel<K, V> extends NetChannelHandler {
 			callbackRunnable = null;
 		}
 		// Stop message producer.
-		if (producer != null) {
+		if (sender != null) {
 			try {
-				producer.close();
+				sender.getProducer().close();
 			} catch (Exception e) {
 				logger.error(e);
 			}
+			sender = null;
 		}
 		return true;
 	}
+
+	/**
+	 * Gets the from remote I/O object (returns not null).
+	 * @param consumer A client that consumes records from a Kafka cluster.
+	 * @param record A key/value pair to be received from Kafka.
+	 * @return The from remote I/O object.
+	 */
+	protected abstract NetIO<?, ?> getFromRemoteIO(KafkaConsumer<K, V> consumer, ConsumerRecord<K, V> record);
 
 	/**
 	 * The kafka consumer configuration.
@@ -259,10 +268,6 @@ public class NetKafkaChannel<K, V> extends NetChannelHandler {
 		 */
 		private final NetKafkaChannel<K, V> channel;
 		/**
-		 * The kafka sender object.
-		 */
-		private final NetKafkaSender<K, V> sender;
-		/**
 		 * The kafka consumer configuration.
 		 */
 		private final ConsumerConfig config;
@@ -275,6 +280,10 @@ public class NetKafkaChannel<K, V> extends NetChannelHandler {
 		 */
 		private final Object consumerLock = new Object();
 		/**
+		 * Unique sequence number for channel opened.
+		 */
+		private final long openingID;
+		/**
 		 * The stop status.
 		 */
 		private boolean stopped = false;
@@ -283,12 +292,12 @@ public class NetKafkaChannel<K, V> extends NetChannelHandler {
 		 * Constructor for consumer messages.
 		 * @param channel The network channel object.
 		 * @param config The kafka consumer configuration.
-		 * @param sender The kafka message sender object.
+		 * @param openingID Unique sequence number for channel opened.
 		 */
-		ConsumerRunnable(NetKafkaChannel<K, V> channel, ConsumerConfig config, NetKafkaSender<K, V> sender) {
+		ConsumerRunnable(NetKafkaChannel<K, V> channel, ConsumerConfig config, long openingID) {
 			this.channel = channel;
 			this.config = config;
-			this.sender = sender;
+			this.openingID = openingID;
 			this.consumer = new KafkaConsumer<K, V>(config.props);
 		}
 
@@ -365,7 +374,7 @@ public class NetKafkaChannel<K, V> extends NetChannelHandler {
 						// Traverse message data
 						for (ConsumerRecord<K, V> record : records) {
 							// Notify message.
-							manager.onMessage(new NetKafkaIO<>(channel, new NetKafkaReader<>(consumer, record), sender));
+							manager.onMessage(channel.getFromRemoteIO(consumer, record));
 						}
 						// Commit offset by async mode if "enable.auto.commit=false".
 						if (!config.autoCommitOffset) consumer.commitAsync();
@@ -412,7 +421,7 @@ public class NetKafkaChannel<K, V> extends NetChannelHandler {
 				}
 				// Close channel.
 				try {
-					channel.close();
+					channel.closeFor(openingID);
 				} catch (Exception e) {
 					logger.error(e);
 				}

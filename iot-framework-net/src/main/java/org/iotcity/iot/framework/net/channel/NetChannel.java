@@ -206,11 +206,11 @@ public interface NetChannel extends Configurable<NetChannelOptions> {
 	void clearOutbounds();
 
 	/**
-	 * Open this channel, after successful opening, this channel will be automatically added to the service.
-	 * @return Returns whether this channel was successfully opened.
+	 * Open this channel, after successful opening, this channel will be automatically added to the service (returns -1 on failure, otherwise returns a value greater than zero).
+	 * @return Unique sequence number for channel opened.
 	 * @throws Exception An error will be thrown when an exception is encountered during execution.
 	 */
-	boolean open() throws Exception;
+	long open() throws Exception;
 
 	/**
 	 * Close this channel, after successful closing, this channel will be automatically removed from the service.
@@ -218,6 +218,14 @@ public interface NetChannel extends Configurable<NetChannelOptions> {
 	 * @throws Exception An error will be thrown when an exception is encountered during execution.
 	 */
 	boolean close() throws Exception;
+
+	/**
+	 * Close this channel for the specified opening ID the channel opened.
+	 * @param openingID Unique sequence number for channel opened.
+	 * @return Returns whether this channel was successfully closed.
+	 * @throws Exception An error will be thrown when an exception is encountered during execution.
+	 */
+	boolean closeFor(long openingID) throws Exception;
 
 	/**
 	 * Destroy this channel without closing event, calling this method will close this channel automatically.

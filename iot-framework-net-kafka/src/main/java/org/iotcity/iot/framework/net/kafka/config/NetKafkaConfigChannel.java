@@ -23,8 +23,8 @@ public class NetKafkaConfigChannel {
 	 * 
 	 * <pre>
 	 * org.iotcity.iot.framework.net.kafka.channels.NetKafkaStringChannel<br/>
-	 * org.iotcity.iot.framework.net.kafka.channels.NetKafkaByteChannel<br/>
-	 * org.iotcity.iot.framework.net.kafka.channels.NetKafkaStringByteChannel<br/>
+	 * org.iotcity.iot.framework.net.kafka.channels.NetKafkaBytesChannel<br/>
+	 * org.iotcity.iot.framework.net.kafka.channels.NetKafkaStringBytesChannel<br/>
 	 * </pre>
 	 */
 	public Class<?> instance;

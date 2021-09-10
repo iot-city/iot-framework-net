@@ -20,31 +20,45 @@ public final class JSONFactory {
 	 */
 	private static Class<?> jsonClass;
 	/**
+	 * The locker for JSON class.
+	 */
+	private static final Object classLock = new Object();
+	/**
 	 * JSON default converter object.
 	 */
 	private static JSON instance;
 	/**
-	 * The instance lock.
+	 * The locker for instance.
 	 */
 	private static final Object instanceLock = new Object();
 
-	static {
-		// Initialize all supported JSON classes.
-		Map<String, Class<?>> jsons = new LinkedHashMap<>();
-		jsons.put("com.alibaba.fastjson.JSON", FastJSON.class);
-		jsons.put("com.google.gson.Gson", GsonJSON.class);
-		// Traversal the map.
-		for (Entry<String, Class<?>> kv : jsons.entrySet()) {
-			try {
-				if (Class.forName(kv.getKey()) != null) {
-					jsonClass = kv.getValue();
-					break;
+	/**
+	 * Gets supported JSON class (never null).
+	 */
+	public static final Class<?> getJSONClass() {
+		if (jsonClass != null) return jsonClass;
+		synchronized (classLock) {
+			if (jsonClass != null) return jsonClass;
+
+			// Initialize all supported JSON classes.
+			Map<String, Class<?>> jsons = new LinkedHashMap<>();
+			jsons.put("com.alibaba.fastjson.JSON", FastJSON.class);
+			jsons.put("com.google.gson.Gson", GsonJSON.class);
+			// Traversal the map.
+			for (Entry<String, Class<?>> kv : jsons.entrySet()) {
+				try {
+					if (Class.forName(kv.getKey()) != null) {
+						jsonClass = kv.getValue();
+						break;
+					}
+				} catch (Exception e) {
 				}
-			} catch (Exception e) {
 			}
+
+			// Set to none JSON class.
+			if (jsonClass == null) jsonClass = NoneJSON.class;
 		}
-		// Set to none JSON class.
-		if (jsonClass == null) jsonClass = NoneJSON.class;
+		return jsonClass;
 	}
 
 	/**
@@ -65,7 +79,7 @@ public final class JSONFactory {
 	 */
 	public static final JSON newJSON() {
 		try {
-			return (JSON) jsonClass.getConstructor().newInstance();
+			return (JSON) getJSONClass().getConstructor().newInstance();
 		} catch (Exception e) {
 			e.printStackTrace();
 			return new NoneJSON();

@@ -47,7 +47,7 @@ public final class NetKafkaService extends NetServiceHandler {
 		if (file == null) return true;
 
 		// Load channel configuration.
-		NetKafkaConfigChannel[] channels = PropertiesLoader.loadConfigArray(NetKafkaConfigChannel.class, file, "iot.framework.net.kafka");
+		NetKafkaConfigChannel[] channels = PropertiesLoader.loadConfigArray(NetKafkaConfigChannel.class, file, "iot.framework.net.kafka.channels");
 		if (channels == null || channels.length == 0) return true;
 
 		// Traverse all configurations.

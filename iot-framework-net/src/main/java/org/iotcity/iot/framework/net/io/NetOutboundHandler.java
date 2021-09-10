@@ -28,7 +28,7 @@ public abstract class NetOutboundHandler<IO extends NetIO<?, ?>, DATA extends Ne
 	/**
 	 * Constructor for network outbound handler.
 	 */
-	public NetOutboundHandler() {
+	protected NetOutboundHandler() {
 		Type[] types = ((ParameterizedType) this.getClass().getGenericSuperclass()).getActualTypeArguments();
 		this.ioClass = (Class<?>) types[0];
 		this.dataClass = (Class<?>) types[1];
@@ -39,7 +39,7 @@ public abstract class NetOutboundHandler<IO extends NetIO<?, ?>, DATA extends Ne
 	 * @param ioClass The network I/O object class.
 	 * @param dataClass The network data object class.
 	 */
-	public NetOutboundHandler(Class<IO> ioClass, Class<DATA> dataClass) {
+	protected NetOutboundHandler(Class<IO> ioClass, Class<DATA> dataClass) {
 		this.ioClass = ioClass;
 		this.dataClass = dataClass;
 	}

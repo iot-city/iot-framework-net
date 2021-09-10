@@ -12,7 +12,7 @@ public class NetKafkaConfigProducer {
 	/**
 	 * The producer callback consumer configuration.
 	 */
-	public NetKafkaConfigCallback calback;
+	public NetKafkaConfigCallback callback;
 
 	/**
 	 * The producer config map (required, can not be null).<br/>

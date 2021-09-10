@@ -9,6 +9,7 @@ import org.iotcity.iot.framework.core.util.config.PropertiesMap;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
 import org.iotcity.iot.framework.net.FrameworkNet;
 import org.iotcity.iot.framework.net.serialization.json.JSON;
+import org.iotcity.iot.framework.net.serialization.json.JSONFactory;
 
 /**
  * The JSON converter for GsonJSON.
@@ -51,35 +52,39 @@ public final class GsonJSON implements JSON {
 	private static Method getArrayObjectMethodByType;
 
 	static {
-		try {
-			gsonClass = Class.forName("com.google.gson.Gson");
-			toJSONMethod = gsonClass.getMethod("toJson", new Class[] {
-				Object.class
-			});
-			toObjectMethod = gsonClass.getMethod("fromJson", new Class[] {
-				String.class,
-				Class.class
-			});
-			toObjectMethodByType = gsonClass.getMethod("fromJson", new Class[] {
-				String.class,
-				Type.class
-			});
-			Class<?> clazz = Class.forName("com.google.gson.JsonParser");
-			parseArrayMethod = clazz.getMethod("parseString", new Class[] {
-				String.class
-			});
-			clazz = Class.forName("com.google.gson.JsonElement");
-			toArrayMethod = clazz.getMethod("getAsJsonArray");
-			getArrayObjectMethod = gsonClass.getMethod("fromJson", new Class[] {
-				clazz,
-				Class.class
-			});
-			getArrayObjectMethodByType = gsonClass.getMethod("fromJson", new Class[] {
-				clazz,
-				Type.class
-			});
-		} catch (Exception e) {
-			FrameworkNet.getLogger().error(e);
+		// Check for valid class.
+		if (JSONFactory.getJSONClass().equals(GsonJSON.class)) {
+			try {
+				// Gets JSON methods.
+				gsonClass = Class.forName("com.google.gson.Gson");
+				toJSONMethod = gsonClass.getMethod("toJson", new Class[] {
+					Object.class
+				});
+				toObjectMethod = gsonClass.getMethod("fromJson", new Class[] {
+					String.class,
+					Class.class
+				});
+				toObjectMethodByType = gsonClass.getMethod("fromJson", new Class[] {
+					String.class,
+					Type.class
+				});
+				Class<?> clazz = Class.forName("com.google.gson.JsonParser");
+				parseArrayMethod = clazz.getMethod("parseString", new Class[] {
+					String.class
+				});
+				clazz = Class.forName("com.google.gson.JsonElement");
+				toArrayMethod = clazz.getMethod("getAsJsonArray");
+				getArrayObjectMethod = gsonClass.getMethod("fromJson", new Class[] {
+					clazz,
+					Class.class
+				});
+				getArrayObjectMethodByType = gsonClass.getMethod("fromJson", new Class[] {
+					clazz,
+					Type.class
+				});
+			} catch (Exception e) {
+				FrameworkNet.getLogger().error(e);
+			}
 		}
 	}
 

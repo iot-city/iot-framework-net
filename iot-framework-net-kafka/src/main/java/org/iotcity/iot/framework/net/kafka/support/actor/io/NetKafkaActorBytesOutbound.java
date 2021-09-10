@@ -5,12 +5,12 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.iotcity.iot.framework.net.io.NetData;
 import org.iotcity.iot.framework.net.io.NetMessageDirection;
 import org.iotcity.iot.framework.net.io.NetMessageStatus;
-import org.iotcity.iot.framework.net.kafka.NetKafkaIO;
-import org.iotcity.iot.framework.net.kafka.NetKafkaOutbound;
-import org.iotcity.iot.framework.net.kafka.NetKafkaSender;
-import org.iotcity.iot.framework.net.kafka.NetKafkaSenderCallback;
-import org.iotcity.iot.framework.net.kafka.NetKafkaSenderResult;
+import org.iotcity.iot.framework.net.io.NetOutboundHandler;
 import org.iotcity.iot.framework.net.kafka.NetKafkaTopicPartition;
+import org.iotcity.iot.framework.net.kafka.io.NetKafkaIOBytes;
+import org.iotcity.iot.framework.net.kafka.io.NetKafkaSender;
+import org.iotcity.iot.framework.net.kafka.io.NetKafkaSenderCallback;
+import org.iotcity.iot.framework.net.kafka.io.NetKafkaSenderResult;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequest;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequestData;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorResponse;
@@ -22,15 +22,15 @@ import org.iotcity.iot.framework.net.serialization.serializable.SerializableHelp
  * @author ardon
  * @date 2021-08-29
  */
-public class NetKafkaActorBytesOutbound extends NetKafkaOutbound<byte[], byte[], NetData> {
+public final class NetKafkaActorBytesOutbound extends NetOutboundHandler<NetKafkaIOBytes, NetData> {
 
 	@Override
-	public boolean filter(NetKafkaIO<byte[], byte[]> io, NetData data) {
+	public boolean filter(NetKafkaIOBytes io, NetData data) {
 		return true;
 	}
 
 	@Override
-	public NetMessageStatus send(NetKafkaIO<byte[], byte[]> io, NetData data, long timeout) throws Exception {
+	public NetMessageStatus send(NetKafkaIOBytes io, NetData data, long timeout) throws Exception {
 		NetKafkaSender<byte[], byte[]> sender = io.getSender();
 		if (data.isRequest()) {
 

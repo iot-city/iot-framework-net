@@ -1,4 +1,4 @@
-package org.iotcity.iot.framework.net.kafka;
+package org.iotcity.iot.framework.net.kafka.io;
 
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.iotcity.iot.framework.net.io.NetMessageStatus;
