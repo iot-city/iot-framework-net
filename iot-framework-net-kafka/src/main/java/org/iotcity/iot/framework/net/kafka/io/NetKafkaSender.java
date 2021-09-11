@@ -6,6 +6,7 @@ import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.clients.producer.internals.FutureRecordMetadata;
 import org.iotcity.iot.framework.net.io.NetMessageStatus;
 import org.iotcity.iot.framework.net.io.NetSenderHandler;
 import org.iotcity.iot.framework.net.kafka.NetKafkaChannel;
@@ -93,8 +94,14 @@ public final class NetKafkaSender<K, V> extends NetSenderHandler {
 
 				});
 			}
-			// Return accepted.
-			return new NetKafkaSenderResult(NetMessageStatus.ACCEPTED, future);
+			// Check result type.
+			if (future instanceof FutureRecordMetadata) {
+				// Return accepted.
+				return new NetKafkaSenderResult(NetMessageStatus.ACCEPTED, future);
+			} else {
+				// Return exception status.
+				return new NetKafkaSenderResult(NetMessageStatus.SEND_EXCEPTION, future);
+			}
 		} catch (Exception e) {
 			// Logs error message.
 			channel.getLogger().error(e);

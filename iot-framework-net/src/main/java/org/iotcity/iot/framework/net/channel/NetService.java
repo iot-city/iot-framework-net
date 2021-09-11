@@ -4,6 +4,7 @@ import org.iotcity.iot.framework.core.config.Configurable;
 import org.iotcity.iot.framework.net.NetManager;
 import org.iotcity.iot.framework.net.io.NetInbound;
 import org.iotcity.iot.framework.net.io.NetOutbound;
+import org.iotcity.iot.framework.net.support.actor.NetActorClassFactory;
 import org.iotcity.iot.framework.net.support.bus.NetEventFactory;
 
 /**
@@ -22,6 +23,19 @@ public interface NetService extends Configurable<NetServiceOptions> {
 	 * Gets the service unique identification (returns not null).
 	 */
 	String getServiceID();
+
+	/**
+	 * Set the class factory instance for inbound or outbound serialization.
+	 * @param classFactory The class factory instance, e.g. object implements {@link NetActorClassFactory }.
+	 */
+	void setClassFactory(Object classFactory);
+
+	/**
+	 * Gets the class factory instance for inbound or outbound serialization (returns null if there is no class factory).
+	 * @param <T> The type of class factory, e.g. {@link NetActorClassFactory }.
+	 * @return The class factory instance.
+	 */
+	<T> T getClassFactory();
 
 	/**
 	 * Gets the service monitoring interval in milliseconds for channel status check.

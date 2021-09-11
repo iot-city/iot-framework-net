@@ -3,6 +3,7 @@ package org.iotcity.iot.framework.net.io;
 import org.iotcity.iot.framework.IoTFramework;
 import org.iotcity.iot.framework.core.bus.BusEventPublisher;
 import org.iotcity.iot.framework.net.FrameworkNet;
+import org.iotcity.iot.framework.net.NetThreadLocal;
 import org.iotcity.iot.framework.net.channel.NetInboundObject;
 import org.iotcity.iot.framework.net.channel.NetOutboundObject;
 import org.iotcity.iot.framework.net.support.bus.NetEventFactory;
@@ -83,6 +84,8 @@ public final class NetMessager implements NetMessageEventCallback {
 				// Determine the network data.
 				if (data.isRequest()) {
 
+					// Set request to current thread.
+					NetThreadLocal.setCurrentrequest((NetDataRequest) data);
 					// Handle request data from the remote end.
 					return handleRequest(io, data);
 

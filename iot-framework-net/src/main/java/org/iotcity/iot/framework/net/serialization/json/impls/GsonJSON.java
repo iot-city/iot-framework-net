@@ -116,6 +116,7 @@ public final class GsonJSON implements JSON {
 
 	@Override
 	public String toJSONString(Object obj) {
+		if (obj == null) return null;
 		try {
 			return (String) toJSONMethod.invoke(gson, new Object[] {
 				obj
@@ -128,6 +129,7 @@ public final class GsonJSON implements JSON {
 
 	@Override
 	public <T> T toJavaObject(Class<T> clazz, String str) {
+		if (str == null) return null;
 		try {
 			@SuppressWarnings("unchecked")
 			T obj = (T) toObjectMethod.invoke(gson, new Object[] {
@@ -143,6 +145,7 @@ public final class GsonJSON implements JSON {
 
 	@Override
 	public <T> T toJavaObject(Type type, String str) {
+		if (str == null) return null;
 		try {
 			@SuppressWarnings("unchecked")
 			T obj = (T) toObjectMethodByType.invoke(gson, new Object[] {

@@ -22,6 +22,10 @@ public class NetConfigService {
 	 */
 	public Class<?> instance;
 	/**
+	 * Class factory for inbound or outbound data serialization, e.g. a class implements {@link NetActorClassFactory } (null by default).
+	 */
+	public Class<?> classFactory;
+	/**
 	 * Indicates whether the service starts automatically after configuration (true by default).
 	 */
 	public boolean autoStart = true;

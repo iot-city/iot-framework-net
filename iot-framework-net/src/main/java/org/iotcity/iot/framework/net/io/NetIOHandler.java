@@ -1,5 +1,6 @@
 package org.iotcity.iot.framework.net.io;
 
+import org.iotcity.iot.framework.net.NetThreadLocal;
 import org.iotcity.iot.framework.net.channel.NetChannel;
 import org.iotcity.iot.framework.net.channel.NetInboundObject;
 import org.iotcity.iot.framework.net.channel.NetOutboundObject;
@@ -83,8 +84,25 @@ public class NetIOHandler<READER extends NetReader, SENDER extends NetSender> im
 	}
 
 	@Override
+	public <REQ extends NetDataRequest, RES extends NetDataResponse> REQ getCallbackRequest(String messageID, Class<REQ> requestClass, Class<RES> responseClass) {
+		return channel.getResponser().getRequest(messageID, requestClass, responseClass);
+	}
+
+	@Override
+	public <REQ extends NetDataRequest> REQ getToRemoteRequest() {
+		@SuppressWarnings("unchecked")
+		REQ req = (REQ) NetThreadLocal.getCurrentrequest();
+		return req;
+	}
+
+	@Override
 	public final NetResponser getResponser() {
 		return channel.getResponser();
+	}
+
+	@Override
+	public final <T> T getClassFactory() {
+		return service.getClassFactory();
 	}
 
 	@Override

@@ -74,6 +74,10 @@ public abstract class NetServiceHandler implements NetService {
 	// --------------------------- Private fields ----------------------------
 
 	/**
+	 * The class factory instance for serialization.
+	 */
+	private Object classFactory;
+	/**
 	 * The network clients thread safe map (the key is channel ID, the value is channel object).
 	 */
 	private final Map<String, NetChannel> clients = new ConcurrentHashMap<>();
@@ -242,6 +246,18 @@ public abstract class NetServiceHandler implements NetService {
 	@Override
 	public final String getServiceID() {
 		return serviceID;
+	}
+
+	@Override
+	public final void setClassFactory(Object classFactory) {
+		this.classFactory = classFactory;
+	}
+
+	@Override
+	public final <T> T getClassFactory() {
+		@SuppressWarnings("unchecked")
+		T ret = (T) this.classFactory;
+		return ret;
 	}
 
 	@Override

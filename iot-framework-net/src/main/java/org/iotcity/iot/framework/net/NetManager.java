@@ -192,10 +192,25 @@ public final class NetManager implements Configurable<NetConfig> {
 					FrameworkNet.getLogger().error(e);
 				}
 
+				// Create class factory.
+				Object classFactory = null;
+				if (config.classFactory != null) {
+					try {
+						classFactory = IoTFramework.getInstance(config.classFactory);
+					} catch (Exception e) {
+						FrameworkNet.getLogger().error(e);
+						return false;
+					}
+				}
+
 				// Add to manager and config the service.
 				if (!this.addService(service) || !service.config(config.options, reset)) {
+					// Logs error message.
 					FrameworkNet.getLogger().error(FrameworkNet.getLocale().text("net.manager.config.err", clazz.getName(), config.serviceID));
 					return false;
+				} else if (classFactory != null) {
+					// Set class factory to service.
+					service.setClassFactory(classFactory);
 				}
 
 				// Start service automatically.

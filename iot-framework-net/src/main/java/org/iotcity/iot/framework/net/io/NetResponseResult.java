@@ -1,5 +1,6 @@
 package org.iotcity.iot.framework.net.io;
 
+import org.iotcity.iot.framework.core.util.helper.JavaHelper;
 import org.iotcity.iot.framework.net.channel.NetChannel;
 import org.iotcity.iot.framework.net.channel.NetService;
 
@@ -9,6 +10,8 @@ import org.iotcity.iot.framework.net.channel.NetService;
  * @date 2021-06-25
  */
 public final class NetResponseResult<RES extends NetDataResponse> {
+
+	// --------------------------- Private fields ----------------------------
 
 	/**
 	 * The network input and output object (not null).
@@ -23,6 +26,8 @@ public final class NetResponseResult<RES extends NetDataResponse> {
 	 */
 	private final RES response;
 
+	// --------------------------- Constructor ----------------------------
+
 	/**
 	 * Constructor for network response result data.
 	 * @param io The network input and output object (required, can not be null).
@@ -36,6 +41,8 @@ public final class NetResponseResult<RES extends NetDataResponse> {
 		this.status = status;
 		this.response = response;
 	}
+
+	// --------------------------- Public methods ----------------------------
 
 	/**
 	 * Gets the network service of response (returns not null).
@@ -70,6 +77,21 @@ public final class NetResponseResult<RES extends NetDataResponse> {
 	 */
 	public final RES getResponse() {
 		return response;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{service=\"");
+		sb.append(io.getService().getServiceID());
+		sb.append("\", channel=\"");
+		sb.append(io.getChannel().getChannelID());
+		sb.append("\", status=");
+		sb.append(status);
+		sb.append(", response=");
+		JavaHelper.getDataPreview(response, sb);
+		sb.append("}");
+		return sb.toString();
 	}
 
 }

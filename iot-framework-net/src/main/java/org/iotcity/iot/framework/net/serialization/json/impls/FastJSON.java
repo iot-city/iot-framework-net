@@ -97,6 +97,7 @@ public final class FastJSON implements JSON {
 
 	@Override
 	public String toJSONString(Object obj) {
+		if (obj == null) return null;
 		try {
 			return (String) toJSONMethod.invoke(null, new Object[] {
 				obj
@@ -109,6 +110,7 @@ public final class FastJSON implements JSON {
 
 	@Override
 	public <T> T toJavaObject(Class<T> clazz, String str) {
+		if (str == null) return null;
 		try {
 			@SuppressWarnings("unchecked")
 			T obj = (T) toObjectMethod.invoke(null, new Object[] {
@@ -124,6 +126,7 @@ public final class FastJSON implements JSON {
 
 	@Override
 	public <T> T toJavaObject(Type type, String str) {
+		if (str == null) return null;
 		try {
 			@SuppressWarnings("unchecked")
 			T obj = (T) toObjectMethodByType.invoke(null, new Object[] {
