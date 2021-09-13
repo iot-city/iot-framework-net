@@ -23,10 +23,11 @@ import org.iotcity.iot.framework.net.support.bus.NetSessionEvent;
 import org.iotcity.iot.framework.net.support.bus.NetSessionEventData;
 
 /**
+ * The kafka event factory for event creation.
  * @author ardon
  * @date 2021-06-22
  */
-public class NetKafkaEventFactory implements NetEventFactory {
+public final class NetKafkaEventFactory implements NetEventFactory {
 
 	@Override
 	public NetChannelEvent createChannelEvent(Object source, NetChannel channel, NetChannelState state) {
