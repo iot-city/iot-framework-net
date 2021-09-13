@@ -54,9 +54,13 @@ public final class NetKafkaActorBytesOutbound extends NetOutboundHandler<NetKafk
 				@Override
 				public void onCallback(NetMessageStatus status, RecordMetadata metadata, Exception exception) {
 					// Determines whether to send data successfully.
-					if (status == NetMessageStatus.OK) return;
-					// Callback response status on failure.
-					io.getResponser().tryCallback(NetMessageDirection.TO_REMOTE_REQUEST, io, messageID, NetKafkaActorResponse.class, status, null);
+					if (status == NetMessageStatus.OK) {
+						// Callback response status on success if the callback is not required.
+						if (callback == null) io.getResponser().tryCallback(NetMessageDirection.TO_REMOTE_REQUEST, io, messageID, NetKafkaActorResponse.class, status, null);
+					} else {
+						// Callback response status on failure.
+						io.getResponser().tryCallback(NetMessageDirection.TO_REMOTE_REQUEST, io, messageID, NetKafkaActorResponse.class, status, null);
+					}
 				}
 
 			});

@@ -76,10 +76,10 @@ public final class NetMessager implements NetMessageEventCallback {
 					return NetMessageStatus.READ_EXCEPTION;
 
 				}
-				// Check for null value.
-				if (data == null) continue;
 				// Update message time.
 				io.getChannel().updateMessageTime();
+				// Check for null value.
+				if (data == null) return NetMessageStatus.ACCEPTED;
 
 				// Determine the network data.
 				if (data.isRequest()) {

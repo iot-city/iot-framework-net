@@ -14,10 +14,6 @@ public class NetKafkaConfigChannel {
 	 */
 	public String channelID;
 	/**
-	 * Indicates whether the current channel is enabled (true by default).
-	 */
-	public boolean enabled = true;
-	/**
 	 * The channel instance class (required, can not be null).<br/>
 	 * The variable channel classes in the framework:<br/>
 	 * 

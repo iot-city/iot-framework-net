@@ -126,7 +126,7 @@ public abstract class NetKafkaChannel<K, V> extends NetChannelHandler {
 		}
 
 		// Check available.
-		if (this.consumerConfig == null || this.producerConfig == null) {
+		if (this.consumerConfig == null && this.producerConfig == null) {
 			throw new IllegalArgumentException("The parameter configuration of consumerConfig or producerConfig is invalid!");
 		}
 
@@ -398,15 +398,15 @@ public abstract class NetKafkaChannel<K, V> extends NetChannelHandler {
 						}
 					}
 				} finally {
-					// Close consumer.
-					try {
-						consumer.close(Duration.ofMillis(config.closeTimeout));
-					} catch (Exception e) {
-						logger.error(e);
-					}
 					// Run unsubscribe after close to ensure the offsets committing.
 					try {
 						consumer.unsubscribe();
+					} catch (Exception e) {
+						logger.error(e);
+					}
+					// Close consumer.
+					try {
+						consumer.close(Duration.ofMillis(config.closeTimeout));
 					} catch (Exception e) {
 						logger.error(e);
 					}

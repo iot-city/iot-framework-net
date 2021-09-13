@@ -53,7 +53,7 @@ public final class NetKafkaService extends NetServiceHandler {
 		// Traverse all configurations.
 		for (NetKafkaConfigChannel config : channels) {
 			// Verify config data.
-			if (!config.enabled || config.instance == null) continue;
+			if (config.instance == null) continue;
 
 			// New channel instance.
 			Class<?> clazz = config.instance;

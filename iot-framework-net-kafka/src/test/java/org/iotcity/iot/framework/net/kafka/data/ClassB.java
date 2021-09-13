@@ -24,7 +24,7 @@ public class ClassB implements Serializable {
 	}
 
 	public String toString() {
-		return "ClassB-" + name;
+		return "ClassB-" + index + ":" + name;
 	}
 
 }

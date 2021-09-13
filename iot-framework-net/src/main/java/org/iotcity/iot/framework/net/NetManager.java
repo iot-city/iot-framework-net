@@ -58,6 +58,10 @@ public final class NetManager implements Configurable<NetConfig> {
 	 */
 	private final NetRequester requester = new NetRequester();
 	/**
+	 * The lock for task handler instance.
+	 */
+	private final Object taskLock = new Object();
+	/**
 	 * The unique ID of the current server, which is used for distributed access.<br/>
 	 * If it is not set, the current server IP address and MAC address will be automatically used as the default value.
 	 */
@@ -77,7 +81,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * Constructor for network manager instance.
 	 */
 	public NetManager() {
-		this(null, TaskHandler.getDefaultHandler());
+		this(null, null);
 	}
 
 	/**
@@ -126,6 +130,12 @@ public final class NetManager implements Configurable<NetConfig> {
 	 * @return Task handler object.
 	 */
 	public final TaskHandler getTaskHandler() {
+		if (taskHandler != null) return taskHandler;
+		synchronized (taskLock) {
+			if (taskHandler != null) return taskHandler;
+			taskHandler = TaskHandler.getDefaultHandler();
+			maximumThreadSize = taskHandler.getThreadPoolExecutor().getMaximumPoolSize() / 3 - 1;
+		}
 		return taskHandler;
 	}
 
@@ -135,8 +145,10 @@ public final class NetManager implements Configurable<NetConfig> {
 	 */
 	public final void setTaskHandler(TaskHandler taskHandler) {
 		if (taskHandler == null) return;
-		this.taskHandler = taskHandler;
-		this.maximumThreadSize = taskHandler.getThreadPoolExecutor().getMaximumPoolSize() / 3 - 1;
+		synchronized (taskLock) {
+			this.taskHandler = taskHandler;
+			this.maximumThreadSize = taskHandler.getThreadPoolExecutor().getMaximumPoolSize() / 3 - 1;
+		}
 	}
 
 	@Override
@@ -163,13 +175,13 @@ public final class NetManager implements Configurable<NetConfig> {
 		this.sessions.config(data.sessions, reset);
 
 		// Get task handler.
-		TaskHandler handler = taskHandler;
+		TaskHandler handler = getTaskHandler();
 		// Do services configuration.
 		NetConfigService[] svcsConfig = data.services;
 		if (svcsConfig != null && svcsConfig.length > 0) {
 			for (NetConfigService config : svcsConfig) {
 				// Verify config data.
-				if (!config.enabled || config.instance == null) continue;
+				if (config.instance == null) continue;
 
 				// New service instance.
 				Class<?> clazz = config.instance;
@@ -389,7 +401,7 @@ public final class NetManager implements Configurable<NetConfig> {
 		if (io.isAsynchronous() && io.isMultithreading()) {
 
 			// Get task handler.
-			TaskHandler handler = taskHandler;
+			TaskHandler handler = getTaskHandler();
 			// Run multithreading task.
 			boolean submitted = handler.run(new PriorityRunnable(io.getChannel().getMultithreadingPriority()) {
 
@@ -528,7 +540,7 @@ public final class NetManager implements Configurable<NetConfig> {
 
 			};
 			// Run channel request using task group executor.
-			TaskGroupExecutor executor = new TaskGroupExecutor(taskHandler, context, threads, expandCorePoolSize, groupTimeout);
+			TaskGroupExecutor executor = new TaskGroupExecutor(getTaskHandler(), context, threads, expandCorePoolSize, groupTimeout);
 			// Do execution and return the result.
 			return executor.execute();
 
@@ -649,7 +661,7 @@ public final class NetManager implements Configurable<NetConfig> {
 
 			};
 			// Run channel request using task group executor.
-			TaskGroupExecutor executor = new TaskGroupExecutor(taskHandler, context, threads, expandCorePoolSize, groupTimeout);
+			TaskGroupExecutor executor = new TaskGroupExecutor(getTaskHandler(), context, threads, expandCorePoolSize, groupTimeout);
 			// Do execution and get the successes.
 			int successes = executor.execute();
 			// Return result data.

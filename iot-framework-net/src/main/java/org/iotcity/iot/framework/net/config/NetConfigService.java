@@ -1,6 +1,7 @@
 package org.iotcity.iot.framework.net.config;
 
 import org.iotcity.iot.framework.net.channel.NetServiceOptions;
+import org.iotcity.iot.framework.net.support.actor.NetActorClassFactory;
 
 /**
  * The network service configuration data.
@@ -13,10 +14,6 @@ public class NetConfigService {
 	 * The service unique identification (required, can not be null or empty).
 	 */
 	public String serviceID;
-	/**
-	 * Indicates whether the current service is enabled (true by default).
-	 */
-	public boolean enabled = true;
 	/**
 	 * The service instance class (required, can not be null).
 	 */

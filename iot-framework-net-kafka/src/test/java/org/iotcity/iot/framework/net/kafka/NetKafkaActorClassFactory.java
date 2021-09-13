@@ -1,5 +1,7 @@
 package org.iotcity.iot.framework.net.kafka;
 
+import org.iotcity.iot.framework.net.kafka.data.ClassA;
+import org.iotcity.iot.framework.net.kafka.data.ClassB;
 import org.iotcity.iot.framework.net.support.actor.NetActorClassFactory;
 import org.iotcity.iot.framework.net.support.actor.NetActorCommand;
 
@@ -11,12 +13,15 @@ public class NetKafkaActorClassFactory implements NetActorClassFactory {
 
 	@Override
 	public Class<?>[] getParameterTypes(NetActorCommand command) {
-		return null;
+		return new Class<?>[] {
+			ClassA.class,
+			ClassB.class
+		};
 	}
 
 	@Override
 	public Class<?> getReturnType(NetActorCommand command) {
-		return null;
+		return ClassB.class;
 	}
 
 }
