@@ -320,9 +320,10 @@ public abstract class NetKafkaChannel<K, V> extends NetChannelHandler {
 		 */
 		final void setStop() {
 			if (stopped) return;
-			stopped = true;
 			// Lock for consumer.
 			synchronized (consumerLock) {
+				if (stopped) return;
+				stopped = true;
 				// Wake up the consumer.
 				consumer.wakeup();
 				try {
@@ -344,25 +345,8 @@ public abstract class NetKafkaChannel<K, V> extends NetChannelHandler {
 			final Logger logger = channel.getLogger();
 			try {
 
-				// Check subscribe configuration.
-				if (config.topics != null && config.topics.length > 0) {
-					// Subscribe by topic names.
-					if (config.autoCommitOffset) {
-						consumer.subscribe(Arrays.asList(config.topics));
-					} else {
-						consumer.subscribe(Arrays.asList(config.topics), new HandleConsumerRebalance<K, V>(consumer, logger));
-					}
-				} else if (!StringHelper.isEmpty(config.pattern)) {
-					// Subscribe by pattern regex.
-					if (config.autoCommitOffset) {
-						consumer.subscribe(Pattern.compile(config.pattern));
-					} else {
-						consumer.subscribe(Pattern.compile(config.pattern), new HandleConsumerRebalance<K, V>(consumer, logger));
-					}
-				} else {
-					// Subscribe by partitions.
-					subscribeByPartitions();
-				}
+				// Subscribe to the specified topics and partitions.
+				subscribeMessage(logger);
 
 				// Get the timeout duration.
 				Duration duration = Duration.ofMillis(config.pollTimeout);
@@ -386,9 +370,8 @@ public abstract class NetKafkaChannel<K, V> extends NetChannelHandler {
 			} catch (Exception e) {
 				logger.error(e);
 			} finally {
-				// Set to stopped.
-				if (!stopped) stopped = true;
 				try {
+
 					// Commit offset by sync mode again.
 					if (!config.autoCommitOffset) {
 						try {
@@ -397,7 +380,9 @@ public abstract class NetKafkaChannel<K, V> extends NetChannelHandler {
 							logger.error(e);
 						}
 					}
+
 				} finally {
+
 					// Run unsubscribe after close to ensure the offsets committing.
 					try {
 						consumer.unsubscribe();
@@ -410,7 +395,9 @@ public abstract class NetKafkaChannel<K, V> extends NetChannelHandler {
 					} catch (Exception e) {
 						logger.error(e);
 					}
+
 				}
+
 				// Unlock the waiting.
 				synchronized (consumerLock) {
 					try {
@@ -418,42 +405,73 @@ public abstract class NetKafkaChannel<K, V> extends NetChannelHandler {
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
+					// Check stopped status.
+					if (!stopped) {
+						// Set to stopped.
+						stopped = true;
+						// Close channel.
+						try {
+							channel.closeFor(openingID);
+						} catch (Exception e) {
+							logger.error(e);
+						}
+					}
 				}
-				// Close channel.
-				try {
-					channel.closeFor(openingID);
-				} catch (Exception e) {
-					logger.error(e);
-				}
+
 			}
 		}
 
 		/**
 		 * Subscribe to the specified topics and partitions.
 		 */
-		private final void subscribeByPartitions() {
-			// Defined partitions list.
-			List<TopicPartition> list = new ArrayList<>();
-			// Traverse partitions configured.
-			for (NetKafkaConfigPartition cp : config.partitions) {
-				String topic = cp.topic;
-				int[] pids = cp.partitions;
-				// Determine whether to subscribe to all partitions.
-				if (pids == null || pids.length == 0) {
-					// Subscribe to all partitions.
-					List<PartitionInfo> partitions = consumer.partitionsFor(topic);
-					for (PartitionInfo partition : partitions) {
-						list.add(new TopicPartition(partition.topic(), partition.partition()));
-					}
+		private final void subscribeMessage(Logger logger) {
+
+			// Check subscribe configuration.
+			if (config.topics != null && config.topics.length > 0) {
+
+				// Subscribe by topic names.
+				if (config.autoCommitOffset) {
+					consumer.subscribe(Arrays.asList(config.topics));
 				} else {
-					// Subscribe to specified partitions.
-					for (int pid : pids) {
-						list.add(new TopicPartition(topic, pid));
+					consumer.subscribe(Arrays.asList(config.topics), new HandleConsumerRebalance<K, V>(consumer, logger));
+				}
+
+			} else if (!StringHelper.isEmpty(config.pattern)) {
+
+				// Subscribe by pattern regex.
+				if (config.autoCommitOffset) {
+					consumer.subscribe(Pattern.compile(config.pattern));
+				} else {
+					consumer.subscribe(Pattern.compile(config.pattern), new HandleConsumerRebalance<K, V>(consumer, logger));
+				}
+
+			} else {
+
+				// Subscribe to the specified topics and partitions.
+				List<TopicPartition> list = new ArrayList<>();
+				// Traverse partitions configured.
+				for (NetKafkaConfigPartition cp : config.partitions) {
+					String topic = cp.topic;
+					int[] pids = cp.partitions;
+					// Determine whether to subscribe to all partitions.
+					if (pids == null || pids.length == 0) {
+						// Subscribe to all partitions.
+						List<PartitionInfo> partitions = consumer.partitionsFor(topic);
+						for (PartitionInfo partition : partitions) {
+							list.add(new TopicPartition(partition.topic(), partition.partition()));
+						}
+					} else {
+						// Subscribe to specified partitions.
+						for (int pid : pids) {
+							list.add(new TopicPartition(topic, pid));
+						}
 					}
 				}
+				// Subscribe partitions.
+				consumer.assign(list);
+
 			}
-			// Subscribe partitions.
-			consumer.assign(list);
+
 		}
 
 	}
