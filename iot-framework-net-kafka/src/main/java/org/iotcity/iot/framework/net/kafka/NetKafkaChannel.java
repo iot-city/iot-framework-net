@@ -398,23 +398,31 @@ public abstract class NetKafkaChannel<K, V> extends NetChannelHandler {
 
 				}
 
+				// The close stopping variable.
+				boolean needStopping = false;
 				// Unlock the waiting.
 				synchronized (consumerLock) {
+					// Check stopped status.
+					if (!stopped) {
+						// Set to stopped.
+						stopped = true;
+						// Set stopping needed.
+						needStopping = true;
+					}
 					try {
 						consumerLock.notify();
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
-					// Check stopped status.
-					if (!stopped) {
-						// Set to stopped.
-						stopped = true;
-						// Close channel.
-						try {
-							channel.closeFor(openingID);
-						} catch (Exception e) {
-							logger.error(e);
-						}
+				}
+
+				// Check stopping variable.
+				if (needStopping) {
+					// Close channel.
+					try {
+						channel.closeFor(openingID);
+					} catch (Exception e) {
+						logger.error(e);
 					}
 				}
 
