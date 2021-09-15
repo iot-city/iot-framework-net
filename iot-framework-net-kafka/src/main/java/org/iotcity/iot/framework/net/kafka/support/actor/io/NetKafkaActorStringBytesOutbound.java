@@ -15,7 +15,7 @@ import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequest;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequestData;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorResponse;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorResponseData;
-import org.iotcity.iot.framework.net.serialization.serializable.SerializableHelper;
+import org.iotcity.iot.framework.net.serialization.bytes.BYTESFactory;
 
 /**
  * The network kafka actor outbound by using string key and bytes value encoding.
@@ -31,7 +31,9 @@ public final class NetKafkaActorStringBytesOutbound extends NetOutboundHandler<N
 
 	@Override
 	public NetMessageStatus send(NetKafkaIOStringBytes io, NetData data, long timeout) throws Exception {
+		// Gets the sender object.
 		NetKafkaSender<String, byte[]> sender = io.getSender();
+		// Check request flag.
 		if (data.isRequest()) {
 
 			// Gets request object.
@@ -45,7 +47,7 @@ public final class NetKafkaActorStringBytesOutbound extends NetOutboundHandler<N
 			// Create request data.
 			NetKafkaActorRequestData reqData = new NetKafkaActorRequestData(request.header, request.command, request.params, callback);
 			// Gets message value.
-			byte[] values = SerializableHelper.serialize(reqData);
+			byte[] values = BYTESFactory.getDefaultBytes().serialize(reqData);
 			// Create a message record.
 			ProducerRecord<String, byte[]> record = new ProducerRecord<String, byte[]>(partition.topic, partition.partition, messageID, values);
 			// Send a record to kafka cluster.
@@ -77,7 +79,7 @@ public final class NetKafkaActorStringBytesOutbound extends NetOutboundHandler<N
 			// Create response data.
 			NetKafkaActorResponseData resData = new NetKafkaActorResponseData(response.result, response.data);
 			// Gets message value.
-			byte[] values = SerializableHelper.serialize(resData);
+			byte[] values = BYTESFactory.getDefaultBytes().serialize(resData);
 			// Create a message record.
 			ProducerRecord<String, byte[]> record = new ProducerRecord<String, byte[]>(partition.topic, partition.partition, messageID, values);
 			// Send a record to kafka cluster.

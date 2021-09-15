@@ -18,7 +18,7 @@ import junit.framework.TestCase;
 public class JSONTest extends TestCase {
 
 	@SuppressWarnings("unchecked")
-	public void testJSON() {
+	public void testJSON() throws Exception {
 
 		JavaHelper.log("----------------------------- TEST JSON FACTORY -----------------------------");
 
@@ -32,7 +32,7 @@ public class JSONTest extends TestCase {
 
 		String str = json.toJSONString(a);
 		JavaHelper.log("Object to JSON string A: " + str);
-		ClassA aobj = json.toJavaObject(ClassA.class, str);
+		ClassA aobj = json.toObject(ClassA.class, str);
 		JavaHelper.log("JSON string to Object A: " + aobj);
 
 		JavaHelper.log("----------------------------- TEST JSON OBJECT TYPE -----------------------------");
@@ -42,7 +42,7 @@ public class JSONTest extends TestCase {
 		list.add(new ClassA("A2", "A2-DECS"));
 		str = json.toJSONString(list);
 		JavaHelper.log("List to JSON string: " + str);
-		list = json.toJavaObject(new JSONTypeReference<List<ClassA>>() {
+		list = json.toObject(new JSONTypeReference<List<ClassA>>() {
 		}.getType(), str);
 		if (list != null) {
 			JavaHelper.log("JSON string to List: " + list.size() + "; A1: " + list.get(0) + "; A2: " + list.get(1));
@@ -57,7 +57,7 @@ public class JSONTest extends TestCase {
 			new ClassA("A2", "A2-DECS")
 		});
 		JavaHelper.log("Array to JSON string: " + str);
-		ClassA[] array1 = json.toJavaObject(ClassA[].class, str);
+		ClassA[] array1 = json.toObject(ClassA[].class, str);
 		if (array1 != null) {
 			JavaHelper.log("JSON string to Array: " + array1.length + "; A1: " + array1[0] + "; A2: " + array1[1]);
 		} else {
@@ -71,7 +71,7 @@ public class JSONTest extends TestCase {
 			b
 		});
 		JavaHelper.log("Array to JSON string: " + str);
-		Serializable[] array2 = json.toJavaArray(Serializable.class, new Class<?>[] {
+		Serializable[] array2 = json.toArray(Serializable.class, new Class<?>[] {
 			ClassA.class,
 			ClassB.class
 		}, str);
@@ -94,7 +94,7 @@ public class JSONTest extends TestCase {
 			listB
 		});
 		JavaHelper.log("Array list to JSON string: " + str);
-		Object[] objects = json.toJavaArray(Object.class, new Type[] {
+		Object[] objects = json.toArray(Object.class, new Type[] {
 			new JSONTypeReference<List<ClassA>>() {
 			}.getType(),
 			new JSONTypeReference<List<ClassB>>() {

@@ -10,7 +10,7 @@ import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequest;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequestData;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorResponse;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorResponseData;
-import org.iotcity.iot.framework.net.serialization.serializable.SerializableHelper;
+import org.iotcity.iot.framework.net.serialization.bytes.BYTESFactory;
 
 /**
  * The network kafka actor inbound by using bytes encoding.
@@ -37,7 +37,7 @@ public final class NetKafkaActorBytesInbound extends NetInboundHandler<NetKafkaI
 		// Gets the message queue.
 		String messageID = new String(keys);
 		// Deserialize data value.
-		Object data = SerializableHelper.deserialize(record.value());
+		Object data = BYTESFactory.getDefaultBytes().deserialize(record.value());
 		// Return network data.
 		if (data instanceof NetKafkaActorRequestData) {
 			// Create inbound request.

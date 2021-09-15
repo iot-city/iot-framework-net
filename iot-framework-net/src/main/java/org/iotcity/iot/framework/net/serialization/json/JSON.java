@@ -28,8 +28,9 @@ public interface JSON {
 	 * 
 	 * @param obj Object that need to be converted.
 	 * @return JSON string.
+	 * @throws Exception An error will be thrown when an exception is encountered during execution.
 	 */
-	String toJSONString(Object obj);
+	String toJSONString(Object obj) throws Exception;
 
 	/**
 	 * Converts a JSON string to an object.
@@ -38,15 +39,16 @@ public interface JSON {
 	 * 
 	 * String str = "{\"id\":1001,\"name\":\"Jobs\"}";
 	 * JSON json = JSONFactory.getDefaultJSON();
-	 * Model model = json.toJavaObject(Model.class, str);
+	 * Model model = json.toObject(Model.class, str);
 	 * </pre>
 	 * 
 	 * @param <T> The object type.
 	 * @param clazz The object class.
 	 * @param str The JSON string to be converted.
 	 * @return An object from JSON string.
+	 * @throws Exception An error will be thrown when an exception is encountered during execution.
 	 */
-	<T> T toJavaObject(Class<T> clazz, String str);
+	<T> T toObject(Class<T> clazz, String str) throws Exception;
 
 	/**
 	 * Converts a JSON string to an object.
@@ -56,7 +58,7 @@ public interface JSON {
 	 * String str = "[{\"id\":1001,\"name\":\"Jobs\"}]";
 	 * JSON json = JSONFactory.getDefaultJSON();
 	 * 
-	 * List&lt;Model&gt; models = json.toJavaObject(new JSONTypeReference&lt;List&lt;Model&gt;&gt;() {
+	 * List&lt;Model&gt; models = json.toObject(new JSONTypeReference&lt;List&lt;Model&gt;&gt;() {
 	 * }.getType(), str);
 	 * 
 	 * </pre>
@@ -65,8 +67,9 @@ public interface JSON {
 	 * @param type Type reference.
 	 * @param str The JSON string to be converted.
 	 * @return An object from JSON string.
+	 * @throws Exception An error will be thrown when an exception is encountered during execution.
 	 */
-	<T> T toJavaObject(Type type, String str);
+	<T> T toObject(Type type, String str) throws Exception;
 
 	/**
 	 * Converts a JSON string to a specified classes array.
@@ -76,7 +79,7 @@ public interface JSON {
 	 * String str = "[{\"a\":1001}, {\"b\":\"Jobs\"}]";
 	 * JSON json = JSONFactory.getDefaultJSON();
 	 * 
-	 * Serializable[] models = json.toJavaArray(Serializable.class, new Class<?>[] {
+	 * Serializable[] models = json.toArray(Serializable.class, new Class<?>[] {
 	 * 	ModelA.class,
 	 * 	ModelB.class
 	 * }, str);
@@ -88,8 +91,9 @@ public interface JSON {
 	 * @param classes The object classes in array.
 	 * @param str The JSON string to be converted.
 	 * @return An array from JSON string.
+	 * @throws Exception An error will be thrown when an exception is encountered during execution.
 	 */
-	<T> T[] toJavaArray(Class<T> arrayClass, Class<?>[] classes, String str);
+	<T> T[] toArray(Class<T> arrayClass, Class<?>[] classes, String str) throws Exception;
 
 	/**
 	 * Converts a JSON string to a specified references array.
@@ -99,7 +103,7 @@ public interface JSON {
 	 * String str = "[[{\"a\":1001}], [{\"b\":\"Jobs\"}]]";
 	 * JSON json = JSONFactory.getDefaultJSON();
 	 * 
-	 * Serializable[] models = json.toJavaArray(Serializable.class, new Type[] {
+	 * Serializable[] models = json.toArray(Serializable.class, new Type[] {
 	 * 	new JSONTypeReference&lt;List&lt;Model&gt;&gt;() {
 	 * 	}.getType(),
 	 * 	new JSONTypeReference&lt;List&lt;Model&gt;&gt;() {
@@ -113,7 +117,8 @@ public interface JSON {
 	 * @param types Type references in array.
 	 * @param str The JSON string to be converted.
 	 * @return An array from JSON string.
+	 * @throws Exception An error will be thrown when an exception is encountered during execution.
 	 */
-	<T> T[] toJavaArray(Class<T> arrayClass, Type[] types, String str);
+	<T> T[] toArray(Class<T> arrayClass, Type[] types, String str) throws Exception;
 
 }

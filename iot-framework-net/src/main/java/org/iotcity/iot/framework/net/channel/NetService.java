@@ -1,6 +1,7 @@
 package org.iotcity.iot.framework.net.channel;
 
 import org.iotcity.iot.framework.core.config.Configurable;
+import org.iotcity.iot.framework.core.config.PropertiesConfigFile;
 import org.iotcity.iot.framework.net.NetManager;
 import org.iotcity.iot.framework.net.io.NetInbound;
 import org.iotcity.iot.framework.net.io.NetOutbound;
@@ -23,6 +24,14 @@ public interface NetService extends Configurable<NetServiceOptions> {
 	 * Gets the service unique identification (returns not null).
 	 */
 	String getServiceID();
+
+	/**
+	 * Do service file configuration logic.
+	 * @param file The configuration file (it is null when there is no configuration file).
+	 * @param reset Whether reset the data of the current configurable object.
+	 * @return Returns whether the service was successfully configured.
+	 */
+	boolean config(PropertiesConfigFile file, boolean reset);
 
 	/**
 	 * Set the class factory instance for inbound or outbound serialization.

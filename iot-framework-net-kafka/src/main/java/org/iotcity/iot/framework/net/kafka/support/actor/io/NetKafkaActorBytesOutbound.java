@@ -15,7 +15,7 @@ import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequest;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequestData;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorResponse;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorResponseData;
-import org.iotcity.iot.framework.net.serialization.serializable.SerializableHelper;
+import org.iotcity.iot.framework.net.serialization.bytes.BYTESFactory;
 
 /**
  * The network kafka actor outbound by using bytes encoding.
@@ -45,7 +45,7 @@ public final class NetKafkaActorBytesOutbound extends NetOutboundHandler<NetKafk
 			// Create request data.
 			NetKafkaActorRequestData reqData = new NetKafkaActorRequestData(request.header, request.command, request.params, callback);
 			// Gets message value.
-			byte[] values = SerializableHelper.serialize(reqData);
+			byte[] values = BYTESFactory.getDefaultBytes().serialize(reqData);
 			// Create a message record.
 			ProducerRecord<byte[], byte[]> record = new ProducerRecord<byte[], byte[]>(partition.topic, partition.partition, messageID.getBytes(), values);
 			// Send a record to kafka cluster.
@@ -77,7 +77,7 @@ public final class NetKafkaActorBytesOutbound extends NetOutboundHandler<NetKafk
 			// Create response data.
 			NetKafkaActorResponseData resData = new NetKafkaActorResponseData(response.result, response.data);
 			// Gets message value.
-			byte[] values = SerializableHelper.serialize(resData);
+			byte[] values = BYTESFactory.getDefaultBytes().serialize(resData);
 			// Create a message record.
 			ProducerRecord<byte[], byte[]> record = new ProducerRecord<byte[], byte[]>(partition.topic, partition.partition, messageID.getBytes(), values);
 			// Send a record to kafka cluster.

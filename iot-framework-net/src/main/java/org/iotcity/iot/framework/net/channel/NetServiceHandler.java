@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.iotcity.iot.framework.IoTFramework;
 import org.iotcity.iot.framework.core.bus.BusEventPublisher;
-import org.iotcity.iot.framework.core.config.PropertiesConfigFile;
 import org.iotcity.iot.framework.core.i18n.LocaleText;
 import org.iotcity.iot.framework.core.logging.Logger;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
@@ -234,8 +233,7 @@ public abstract class NetServiceHandler implements NetService {
 			}
 		}
 
-		// Return configuration result.
-		return this.doConfig(data.config, reset);
+		return true;
 	}
 
 	@Override
@@ -651,14 +649,6 @@ public abstract class NetServiceHandler implements NetService {
 	}
 
 	// --------------------------- Abstract methods ----------------------------
-
-	/**
-	 * Do service file configuration logic.
-	 * @param file The configuration file (it is null when there is no configuration file).
-	 * @param reset Whether reset the data of the current configurable object.
-	 * @return Returns whether the service was successfully configured.
-	 */
-	protected abstract boolean doConfig(PropertiesConfigFile file, boolean reset);
 
 	/**
 	 * Do start service processing logic.

@@ -102,7 +102,7 @@ public class NetKafkaTest extends TestCase {
 
 		final long startSend = System.currentTimeMillis();
 		final AtomicLong startRecv = new AtomicLong();
-		logger.debug("SENDING TOTAL OF REQS: " + MAX_SEND);
+		logger.warn("SENDING TOTAL OF REQS: " + MAX_SEND);
 
 		for (int i = 0, c = MAX_SEND; i < c; i++) {
 
@@ -128,7 +128,8 @@ public class NetKafkaTest extends TestCase {
 						startRecv.set(System.currentTimeMillis());
 					}
 					if (recv == MAX_SEND) {
-						logger.debug("CALLBACK FINISHED: " + ConvertHelper.formatMilliseconds(System.currentTimeMillis() - startRecv.get()));
+						logger.warn("CALLBACK FINISHED: " + ConvertHelper.formatMilliseconds(System.currentTimeMillis() - startRecv.get()));
+						logger.warn("RESULT: " + result);
 						// Notify to complete.
 						synchronized (lock) {
 							lock.notify();
@@ -144,7 +145,7 @@ public class NetKafkaTest extends TestCase {
 			if (!success) logger.error("REQ" + idx + ": " + success);
 		}
 
-		logger.debug("SENT REQ FINISHED: " + ConvertHelper.formatMilliseconds(System.currentTimeMillis() - startSend));
+		logger.warn("SENT REQ FINISHED: " + ConvertHelper.formatMilliseconds(System.currentTimeMillis() - startSend));
 
 	}
 

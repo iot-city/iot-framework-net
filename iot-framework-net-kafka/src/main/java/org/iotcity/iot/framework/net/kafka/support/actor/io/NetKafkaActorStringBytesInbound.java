@@ -1,5 +1,7 @@
 package org.iotcity.iot.framework.net.kafka.support.actor.io;
 
+import java.io.Serializable;
+
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
 import org.iotcity.iot.framework.net.io.NetData;
@@ -11,7 +13,7 @@ import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequest;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequestData;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorResponse;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorResponseData;
-import org.iotcity.iot.framework.net.serialization.serializable.SerializableHelper;
+import org.iotcity.iot.framework.net.serialization.bytes.BYTESFactory;
 
 /**
  * The network kafka actor inbound by using string key and bytes value encoding.
@@ -36,7 +38,7 @@ public final class NetKafkaActorStringBytesInbound extends NetInboundHandler<Net
 		// Gets the partition information.
 		NetKafkaTopicPartition partition = new NetKafkaTopicPartition(record.topic(), record.partition());
 		// Deserialize data value.
-		Object data = SerializableHelper.deserialize(record.value());
+		Serializable data = BYTESFactory.getDefaultBytes().deserialize(record.value());
 		// Return network data.
 		if (data instanceof NetKafkaActorRequestData) {
 			// Create inbound request.

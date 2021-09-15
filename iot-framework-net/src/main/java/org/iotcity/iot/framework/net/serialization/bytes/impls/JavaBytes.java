@@ -1,26 +1,26 @@
-package org.iotcity.iot.framework.net.serialization.serializable;
+package org.iotcity.iot.framework.net.serialization.bytes.impls;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
-/**
- * The serializable helper for serialization.
- * @author ardon
- * @date 2021-08-29
- */
-public final class SerializableHelper {
+import org.iotcity.iot.framework.net.serialization.bytes.BYTES;
 
-	/**
-	 * Serialize the serializable object to bytes.
-	 * @param obj The serializable object.
-	 * @return The object bytes data.
-	 * @throws IOException Any exception thrown by the underlying OutputStream.
-	 */
-	public static final byte[] serialize(Serializable obj) throws IOException {
+/**
+ * The BYTES converter for Java serializable object.
+ * @author ardon
+ * @date 2021-09-15
+ */
+public final class JavaBytes implements BYTES {
+
+	@Override
+	public void register(Class<?>... classes) {
+	}
+
+	@Override
+	public byte[] serialize(Serializable obj) throws Exception {
 		if (obj == null) return null;
 		ByteArrayOutputStream b = new ByteArrayOutputStream();
 		ObjectOutputStream o = null;
@@ -46,15 +46,9 @@ public final class SerializableHelper {
 		}
 	}
 
-	/**
-	 * Deserialize byte array to serializable object.
-	 * @param <T> The serializable object type.
-	 * @param bytes The object bytes data.
-	 * @return The serializable object.
-	 * @throws IOException Any exception thrown by the underlying InputStream.
-	 * @throws ClassNotFoundException Class of a serialized object cannot be found.
-	 */
-	public static final <T extends Serializable> T deserialize(byte[] bytes) throws IOException, ClassNotFoundException {
+	@Override
+	public <T extends Serializable> T deserialize(byte[] bytes) throws Exception {
+		if (bytes == null || bytes.length == 0) return null;
 		ByteArrayInputStream b = new ByteArrayInputStream(bytes);
 		ObjectInputStream o = null;
 		try {
@@ -79,4 +73,5 @@ public final class SerializableHelper {
 			}
 		}
 	}
+
 }

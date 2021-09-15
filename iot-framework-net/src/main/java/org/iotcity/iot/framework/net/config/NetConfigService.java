@@ -1,5 +1,6 @@
 package org.iotcity.iot.framework.net.config;
 
+import org.iotcity.iot.framework.core.config.PropertiesConfigFile;
 import org.iotcity.iot.framework.net.channel.NetServiceOptions;
 import org.iotcity.iot.framework.net.support.actor.NetActorClassFactory;
 
@@ -30,6 +31,10 @@ public class NetConfigService {
 	 * The delayed start time in milliseconds for automatically starting the service (0 ms by default).
 	 */
 	public long autoStartDelay = 0;
+	/**
+	 * The service specific configuration file (null by default).
+	 */
+	public PropertiesConfigFile config;
 	/**
 	 * The service configuration options (null by default).
 	 */

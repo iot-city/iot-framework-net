@@ -4,12 +4,10 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 
-import org.iotcity.iot.framework.core.logging.Logger;
 import org.iotcity.iot.framework.core.util.config.PropertiesMap;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
 import org.iotcity.iot.framework.net.FrameworkNet;
 import org.iotcity.iot.framework.net.serialization.json.JSON;
-import org.iotcity.iot.framework.net.serialization.json.JSONFactory;
 
 /**
  * The JSON converter for GsonJSON.
@@ -18,10 +16,13 @@ import org.iotcity.iot.framework.net.serialization.json.JSONFactory;
  */
 public final class GsonJSON implements JSON {
 
+	// ------------------------------------- Static fields -------------------------------------
+
 	/**
-	 * The GSON object class.
+	 * The GSON class.
 	 */
-	private static Class<?> gsonClass;
+	public static final Class<?> JSON_CLASS = getJSONClass();
+
 	/**
 	 * To JSON string method.
 	 */
@@ -53,18 +54,17 @@ public final class GsonJSON implements JSON {
 
 	static {
 		// Check for valid class.
-		if (JSONFactory.getJSONClass().equals(GsonJSON.class)) {
+		if (JSON_CLASS != null) {
 			try {
 				// Gets JSON methods.
-				gsonClass = Class.forName("com.google.gson.Gson");
-				toJSONMethod = gsonClass.getMethod("toJson", new Class[] {
+				toJSONMethod = JSON_CLASS.getMethod("toJson", new Class[] {
 					Object.class
 				});
-				toObjectMethod = gsonClass.getMethod("fromJson", new Class[] {
+				toObjectMethod = JSON_CLASS.getMethod("fromJson", new Class[] {
 					String.class,
 					Class.class
 				});
-				toObjectMethodByType = gsonClass.getMethod("fromJson", new Class[] {
+				toObjectMethodByType = JSON_CLASS.getMethod("fromJson", new Class[] {
 					String.class,
 					Type.class
 				});
@@ -74,11 +74,11 @@ public final class GsonJSON implements JSON {
 				});
 				clazz = Class.forName("com.google.gson.JsonElement");
 				toArrayMethod = clazz.getMethod("getAsJsonArray");
-				getArrayObjectMethod = gsonClass.getMethod("fromJson", new Class[] {
+				getArrayObjectMethod = JSON_CLASS.getMethod("fromJson", new Class[] {
 					clazz,
 					Class.class
 				});
-				getArrayObjectMethodByType = gsonClass.getMethod("fromJson", new Class[] {
+				getArrayObjectMethodByType = JSON_CLASS.getMethod("fromJson", new Class[] {
 					clazz,
 					Type.class
 				});
@@ -89,13 +89,24 @@ public final class GsonJSON implements JSON {
 	}
 
 	/**
-	 * The framework logger.
+	 * Gets current JSON class.
 	 */
-	private final Logger logger = FrameworkNet.getLogger();
+	private final static Class<?> getJSONClass() {
+		try {
+			return Class.forName("com.google.gson.Gson");
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	// ------------------------------------- Private fields -------------------------------------
+
 	/**
 	 * The GSON object.
 	 */
 	private final Object gson;
+
+	// ------------------------------------- Constructor -------------------------------------
 
 	/**
 	 * Constructor for GsonJSON converter.
@@ -103,108 +114,77 @@ public final class GsonJSON implements JSON {
 	public GsonJSON() {
 		Object obj = null;
 		try {
-			obj = gsonClass.getConstructor().newInstance();
+			obj = JSON_CLASS.getConstructor().newInstance();
 		} catch (Exception e) {
-			logger.error(e);
+			FrameworkNet.getLogger().error(e);
 		}
 		this.gson = obj;
 	}
+
+	// ------------------------------------- Override methods -------------------------------------
 
 	@Override
 	public void config(PropertiesMap<Object> data) {
 	}
 
 	@Override
-	public String toJSONString(Object obj) {
+	public String toJSONString(Object obj) throws Exception {
 		if (obj == null) return null;
-		try {
-			return (String) toJSONMethod.invoke(gson, new Object[] {
-				obj
-			});
-		} catch (Exception e) {
-			logger.error(e);
-			return null;
-		}
+		return (String) toJSONMethod.invoke(gson, obj);
 	}
 
 	@Override
-	public <T> T toJavaObject(Class<T> clazz, String str) {
+	public <T> T toObject(Class<T> clazz, String str) throws Exception {
 		if (str == null) return null;
-		try {
-			@SuppressWarnings("unchecked")
-			T obj = (T) toObjectMethod.invoke(gson, new Object[] {
-				str,
-				clazz
-			});
-			return obj;
-		} catch (Exception e) {
-			logger.error(e);
-			return null;
-		}
+		@SuppressWarnings("unchecked")
+		T obj = (T) toObjectMethod.invoke(gson, str, clazz);
+		return obj;
 	}
 
 	@Override
-	public <T> T toJavaObject(Type type, String str) {
+	public <T> T toObject(Type type, String str) throws Exception {
 		if (str == null) return null;
-		try {
-			@SuppressWarnings("unchecked")
-			T obj = (T) toObjectMethodByType.invoke(gson, new Object[] {
-				str,
-				type
-			});
-			return obj;
-		} catch (Exception e) {
-			logger.error(e);
-			return null;
-		}
+		@SuppressWarnings("unchecked")
+		T obj = (T) toObjectMethodByType.invoke(gson, str, type);
+		return obj;
 	}
 
 	@Override
-	public <T> T[] toJavaArray(Class<T> arrayClass, Class<?>[] classes, String str) {
+	public <T> T[] toArray(Class<T> arrayClass, Class<?>[] classes, String str) throws Exception {
 		if (classes == null || classes.length == 0 || StringHelper.isEmpty(str)) return null;
 		int len = classes.length;
-		try {
-			Object ele = parseArrayMethod.invoke(null, str);
-			Iterable<?> jsonArray = (Iterable<?>) toArrayMethod.invoke(ele);
+		Object ele = parseArrayMethod.invoke(null, str);
+		Iterable<?> jsonArray = (Iterable<?>) toArrayMethod.invoke(ele);
+		@SuppressWarnings("unchecked")
+		T[] rets = (T[]) Array.newInstance(arrayClass, len);
+		int i = 0;
+		for (Object e : jsonArray) {
+			if (i >= len) break;
 			@SuppressWarnings("unchecked")
-			T[] rets = (T[]) Array.newInstance(arrayClass, len);
-			int i = 0;
-			for (Object e : jsonArray) {
-				if (i >= len) break;
-				@SuppressWarnings("unchecked")
-				T obj = (T) getArrayObjectMethod.invoke(gson, e, classes[i]);
-				rets[i] = obj;
-				i++;
-			}
-			return rets;
-		} catch (Exception e) {
-			logger.error(e);
-			return null;
+			T obj = (T) getArrayObjectMethod.invoke(gson, e, classes[i]);
+			rets[i] = obj;
+			i++;
 		}
+		return rets;
 	}
 
 	@Override
-	public <T> T[] toJavaArray(Class<T> arrayClass, Type[] types, String str) {
+	public <T> T[] toArray(Class<T> arrayClass, Type[] types, String str) throws Exception {
 		if (types == null || types.length == 0 || StringHelper.isEmpty(str)) return null;
 		int len = types.length;
-		try {
-			Object ele = parseArrayMethod.invoke(null, str);
-			Iterable<?> jsonArray = (Iterable<?>) toArrayMethod.invoke(ele);
+		Object ele = parseArrayMethod.invoke(null, str);
+		Iterable<?> jsonArray = (Iterable<?>) toArrayMethod.invoke(ele);
+		@SuppressWarnings("unchecked")
+		T[] rets = (T[]) Array.newInstance(arrayClass, len);
+		int i = 0;
+		for (Object e : jsonArray) {
+			if (i >= len) break;
 			@SuppressWarnings("unchecked")
-			T[] rets = (T[]) Array.newInstance(arrayClass, len);
-			int i = 0;
-			for (Object e : jsonArray) {
-				if (i >= len) break;
-				@SuppressWarnings("unchecked")
-				T obj = (T) getArrayObjectMethodByType.invoke(gson, e, types[i]);
-				rets[i] = obj;
-				i++;
-			}
-			return rets;
-		} catch (Exception e) {
-			logger.error(e);
-			return null;
+			T obj = (T) getArrayObjectMethodByType.invoke(gson, e, types[i]);
+			rets[i] = obj;
+			i++;
 		}
+		return rets;
 	}
 
 }

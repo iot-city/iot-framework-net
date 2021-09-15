@@ -17,28 +17,28 @@ public final class NoneJSON implements JSON {
 	}
 
 	@Override
-	public String toJSONString(Object obj) {
-		return null;
+	public String toJSONString(Object obj) throws Exception {
+		throw new Exception("No JSON conversion instance.");
 	}
 
 	@Override
-	public <T> T toJavaObject(Class<T> clazz, String json) {
-		return null;
+	public <T> T toObject(Class<T> clazz, String str) throws Exception {
+		throw new Exception("No JSON conversion instance.");
 	}
 
 	@Override
-	public <T> T toJavaObject(Type type, String str) {
-		return null;
+	public <T> T toObject(Type type, String str) throws Exception {
+		throw new Exception("No JSON conversion instance.");
 	}
 
 	@Override
-	public <T> T[] toJavaArray(Class<T> arrayClass, Class<?>[] classes, String str) {
-		return null;
+	public <T> T[] toArray(Class<T> arrayClass, Class<?>[] classes, String str) throws Exception {
+		throw new Exception("No JSON conversion instance.");
 	}
 
 	@Override
-	public <T> T[] toJavaArray(Class<T> arrayClass, Type[] types, String str) {
-		return null;
+	public <T> T[] toArray(Class<T> arrayClass, Type[] types, String str) throws Exception {
+		throw new Exception("No JSON conversion instance.");
 	}
 
 }

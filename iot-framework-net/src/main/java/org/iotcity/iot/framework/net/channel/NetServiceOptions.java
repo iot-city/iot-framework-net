@@ -1,6 +1,5 @@
 package org.iotcity.iot.framework.net.channel;
 
-import org.iotcity.iot.framework.core.config.PropertiesConfigFile;
 import org.iotcity.iot.framework.net.config.NetConfigInbound;
 import org.iotcity.iot.framework.net.config.NetConfigOutbound;
 
@@ -11,10 +10,6 @@ import org.iotcity.iot.framework.net.config.NetConfigOutbound;
  */
 public class NetServiceOptions {
 
-	/**
-	 * The service specific configuration file (null by default).
-	 */
-	public PropertiesConfigFile config;
 	/**
 	 * The network service inbound configuration data array (null by default).
 	 */

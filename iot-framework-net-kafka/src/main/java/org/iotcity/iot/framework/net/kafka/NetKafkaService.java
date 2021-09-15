@@ -43,7 +43,7 @@ public final class NetKafkaService extends NetServiceHandler {
 	}
 
 	@Override
-	protected final boolean doConfig(PropertiesConfigFile file, boolean reset) {
+	public final boolean config(PropertiesConfigFile file, boolean reset) {
 		if (file == null) return true;
 
 		// Load channel configuration.

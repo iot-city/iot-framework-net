@@ -59,11 +59,11 @@ public interface NetIO<READER extends NetReader, SENDER extends NetSender> {
 	<REQ extends NetDataRequest, RES extends NetDataResponse> REQ getCallbackRequest(String messageID, Class<REQ> requestClass, Class<RES> responseClass);
 
 	/**
-	 * Gets the request data currently sent to remote (returns null if not found).
+	 * Gets the request data currently sent to remote or received from remote (returns null if not found).
 	 * @param <REQ> The request data type.
 	 * @return The request data object.
 	 */
-	<REQ extends NetDataRequest> REQ getToRemoteRequest();
+	<REQ extends NetDataRequest> REQ getCurrentRequest();
 
 	/**
 	 * Gets the responser to process asynchronous response callback message (returns not null).

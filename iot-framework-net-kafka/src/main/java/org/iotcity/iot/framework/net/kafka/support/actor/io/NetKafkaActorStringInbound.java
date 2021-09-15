@@ -45,7 +45,7 @@ public final class NetKafkaActorStringInbound extends NetInboundHandler<NetKafka
 		// Gets the JSON object.
 		JSON json = JSONFactory.getDefaultJSON();
 		// Gets the message information.
-		NetKafkaActorMessageInfo info = json.toJavaObject(NetKafkaActorMessageInfo.class, key);
+		NetKafkaActorMessageInfo info = json.toObject(NetKafkaActorMessageInfo.class, key);
 		if (info == null) return null;
 		// Gets the partition information.
 		NetKafkaTopicPartition partition = new NetKafkaTopicPartition(record.topic(), record.partition());
@@ -54,9 +54,9 @@ public final class NetKafkaActorStringInbound extends NetInboundHandler<NetKafka
 		if (info.request) {
 
 			// Create inbound request.
-			NetKafkaActorRequestString req = json.toJavaObject(NetKafkaActorRequestString.class, record.value());
+			NetKafkaActorRequestString req = json.toObject(NetKafkaActorRequestString.class, record.value());
 			if (req == null) return null;
-			Serializable[] params = json.toJavaArray(Serializable.class, classFactory.getParameterTypes(req.command), req.params);
+			Serializable[] params = json.toArray(Serializable.class, classFactory.getParameterTypes(req.command), req.params);
 			// Return request data.
 			return new NetKafkaActorRequest(info.messageID, partition, req.header, req.command, params, req.callback);
 
@@ -66,10 +66,10 @@ public final class NetKafkaActorStringInbound extends NetInboundHandler<NetKafka
 			NetKafkaActorRequest req = io.getCallbackRequest(info.messageID, NetKafkaActorRequest.class, NetKafkaActorResponse.class);
 			if (req == null) return null;
 			// Create inbound response.
-			NetKafkaActorResponseString res = json.toJavaObject(NetKafkaActorResponseString.class, record.value());
+			NetKafkaActorResponseString res = json.toObject(NetKafkaActorResponseString.class, record.value());
 			if (res == null) return null;
 			// Gets the data object.
-			Serializable data = (Serializable) json.toJavaObject(classFactory.getReturnType(req.command), res.data);
+			Serializable data = (Serializable) json.toObject(classFactory.getReturnType(req.command), res.data);
 			// Return response data.
 			return new NetKafkaActorResponse(info.messageID, partition, res.result, data);
 

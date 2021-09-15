@@ -216,7 +216,7 @@ public final class NetManager implements Configurable<NetConfig> {
 				}
 
 				// Add to manager and config the service.
-				if (!this.addService(service) || !service.config(config.options, reset)) {
+				if (!this.addService(service) || !service.config(config.options, reset) || !service.config(config.config, reset)) {
 					// Logs error message.
 					FrameworkNet.getLogger().error(FrameworkNet.getLocale().text("net.manager.config.err", clazz.getName(), config.serviceID));
 					return false;

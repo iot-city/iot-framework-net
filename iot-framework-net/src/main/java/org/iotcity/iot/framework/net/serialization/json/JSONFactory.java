@@ -1,9 +1,5 @@
 package org.iotcity.iot.framework.net.serialization.json;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.iotcity.iot.framework.net.serialization.json.impls.FastJSON;
 import org.iotcity.iot.framework.net.serialization.json.impls.GsonJSON;
 import org.iotcity.iot.framework.net.serialization.json.impls.NoneJSON;
@@ -16,49 +12,62 @@ import org.iotcity.iot.framework.net.serialization.json.impls.NoneJSON;
 public final class JSONFactory {
 
 	/**
-	 * JSON converter class.
-	 */
-	private static Class<?> jsonClass;
-	/**
 	 * The locker for JSON class.
 	 */
 	private static final Object classLock = new Object();
 	/**
-	 * JSON default converter object.
+	 * JSON converter class.
 	 */
-	private static JSON instance;
+	private static Class<?> jsonClass;
 	/**
 	 * The locker for instance.
 	 */
 	private static final Object instanceLock = new Object();
+	/**
+	 * JSON default converter object.
+	 */
+	private static JSON instance;
 
 	/**
-	 * Gets supported JSON class (never null).
+	 * Set the default JSON converter class (the default JSON converter class will be replaced by this new one).
+	 * @param clazz The JSON converter class.
 	 */
-	public static final Class<?> getJSONClass() {
+	public static final void setDefaultJSONClass(Class<JSON> clazz) {
+		if (clazz == null) return;
+		synchronized (classLock) {
+			jsonClass = clazz;
+		}
+	}
+
+	/**
+	 * Gets the default supported JSON class (never null).
+	 */
+	public static final Class<?> getDefaultJSONClass() {
 		if (jsonClass != null) return jsonClass;
 		synchronized (classLock) {
 			if (jsonClass != null) return jsonClass;
 
-			// Initialize all supported JSON classes.
-			Map<String, Class<?>> jsons = new LinkedHashMap<>();
-			jsons.put("com.alibaba.fastjson.JSON", FastJSON.class);
-			jsons.put("com.google.gson.Gson", GsonJSON.class);
-			// Traversal the map.
-			for (Entry<String, Class<?>> kv : jsons.entrySet()) {
-				try {
-					if (Class.forName(kv.getKey()) != null) {
-						jsonClass = kv.getValue();
-						break;
-					}
-				} catch (Exception e) {
-				}
+			if (FastJSON.JSON_CLASS != null) {
+				jsonClass = FastJSON.class;
+			} else if (GsonJSON.JSON_CLASS != null) {
+				jsonClass = GsonJSON.class;
+			} else {
+				jsonClass = NoneJSON.class;
 			}
 
-			// Set to none JSON class.
-			if (jsonClass == null) jsonClass = NoneJSON.class;
 		}
 		return jsonClass;
+	}
+
+	/**
+	 * Set the default JSON converter instance (the default JSON converter instance will be replaced by this new one).
+	 * @param json JSON converter instance (required, not null).
+	 */
+	public static final void setDefaultJSON(JSON json) {
+		if (json == null) return;
+		synchronized (instanceLock) {
+			instance = json;
+		}
 	}
 
 	/**
@@ -74,12 +83,12 @@ public final class JSONFactory {
 	}
 
 	/**
-	 * New a JSON converter instance (returns not null).
+	 * New a JSON converter instance by default JSON class (returns not null).
 	 * @return JSON converter object.
 	 */
 	public static final JSON newJSON() {
 		try {
-			return (JSON) getJSONClass().getConstructor().newInstance();
+			return (JSON) getDefaultJSONClass().getConstructor().newInstance();
 		} catch (Exception e) {
 			e.printStackTrace();
 			return new NoneJSON();
