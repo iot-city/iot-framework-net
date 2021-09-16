@@ -3,7 +3,6 @@ package org.iotcity.iot.framework.net.io;
 import org.iotcity.iot.framework.IoTFramework;
 import org.iotcity.iot.framework.core.bus.BusEventPublisher;
 import org.iotcity.iot.framework.net.FrameworkNet;
-import org.iotcity.iot.framework.net.NetThreadLocal;
 import org.iotcity.iot.framework.net.channel.NetChannel;
 import org.iotcity.iot.framework.net.channel.NetInboundObject;
 import org.iotcity.iot.framework.net.channel.NetOutboundObject;
@@ -34,8 +33,6 @@ public final class NetRequester {
 	public final <REQ extends NetDataRequest, RES extends NetDataResponse> NetMessageStatus asyncRequest(NetIO<?, ?> io, REQ request, Class<RES> responseClass, NetResponseCallback<RES> callback, long timeout) throws IllegalArgumentException {
 		if (io == null || request == null || responseClass == null) throw new IllegalArgumentException("Parameter io, request and responseClass can not be null!");
 
-		// Set request to current thread.
-		NetThreadLocal.setCurrentrequest(request);
 		// Get request data class.
 		Class<?> requestClass = request.getClass();
 		// Gets the channel of I/O object.
@@ -349,8 +346,6 @@ public final class NetRequester {
 	public final <REQ extends NetDataRequest, RES extends NetDataResponse> NetResponseResult<RES> syncRequest(NetIO<?, ?> io, REQ request, Class<RES> responseClass, long timeout) throws IllegalArgumentException {
 		if (io == null || request == null || responseClass == null) throw new IllegalArgumentException("Parameter io, request and responseClass can not be null!");
 
-		// Set request to current thread.
-		NetThreadLocal.setCurrentrequest(request);
 		// Get request data class.
 		Class<?> requestClass = request.getClass();
 		// Gets the channel of I/O object.

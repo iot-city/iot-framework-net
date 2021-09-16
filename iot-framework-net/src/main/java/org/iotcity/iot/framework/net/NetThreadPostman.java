@@ -25,13 +25,18 @@ public class NetThreadPostman implements ThreadLocalPostman {
 	 */
 	public NetThreadPostman() {
 		this.sessionInfos = NetThreadLocal.getSessionInfos();
-		this.request = NetThreadLocal.getCurrentrequest();
+		this.request = NetThreadLocal.getCurrentRequest();
 	}
 
 	@Override
 	public void storeToCurrentThread() {
 		NetThreadLocal.setSessionInfos(sessionInfos);
-		NetThreadLocal.setCurrentrequest(request);
+		NetThreadLocal.setCurrentRequest(request);
+	}
+
+	@Override
+	public void removeAll() {
+		NetThreadLocal.removeAll();
 	}
 
 }

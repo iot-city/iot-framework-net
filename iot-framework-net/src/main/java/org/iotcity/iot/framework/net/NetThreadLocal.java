@@ -27,7 +27,7 @@ public final class NetThreadLocal {
 	 * Set session information array to thread local.
 	 * @param infos The session information array.
 	 */
-	public static final void setSessionInfos(NetSessionInfo[] infos) {
+	static final void setSessionInfos(NetSessionInfo[] infos) {
 		sessionInfos.set(infos);
 	}
 
@@ -35,8 +35,16 @@ public final class NetThreadLocal {
 	 * Set the network request data to current thread.
 	 * @param request The network request data.
 	 */
-	public static final void setCurrentrequest(NetDataRequest request) {
+	static final void setCurrentRequest(NetDataRequest request) {
 		currentRequest.set(request);
+	}
+
+	/**
+	 * Remove all network thread local variables.
+	 */
+	static final void removeAll() {
+		sessionInfos.remove();
+		currentRequest.remove();
 	}
 
 	// --------------------------- Public methods ----------------------------
@@ -51,7 +59,7 @@ public final class NetThreadLocal {
 	/**
 	 * Gets the network request data of current thread.
 	 */
-	public static final NetDataRequest getCurrentrequest() {
+	public static final NetDataRequest getCurrentRequest() {
 		return currentRequest.get();
 	}
 

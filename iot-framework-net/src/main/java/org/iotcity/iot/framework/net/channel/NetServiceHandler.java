@@ -11,7 +11,6 @@ import org.iotcity.iot.framework.core.bus.BusEventPublisher;
 import org.iotcity.iot.framework.core.i18n.LocaleText;
 import org.iotcity.iot.framework.core.logging.Logger;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
-import org.iotcity.iot.framework.core.util.task.PriorityRunnable;
 import org.iotcity.iot.framework.core.util.task.TaskHandler;
 import org.iotcity.iot.framework.net.FrameworkNet;
 import org.iotcity.iot.framework.net.NetManager;
@@ -136,7 +135,7 @@ public abstract class NetServiceHandler implements NetService {
 	/**
 	 * The monitoring task for service status check.
 	 */
-	private final Runnable monitoringTask = new PriorityRunnable(0) {
+	private final Runnable monitoringTask = new Runnable() {
 
 		@Override
 		public void run() {

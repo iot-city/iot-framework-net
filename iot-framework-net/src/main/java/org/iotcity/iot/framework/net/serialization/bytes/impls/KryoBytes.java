@@ -13,7 +13,7 @@ import org.iotcity.iot.framework.net.serialization.bytes.BYTES;
  * @author ardon
  * @date 2021-09-15
  */
-public class KryoBytes implements BYTES {
+public final class KryoBytes implements BYTES {
 
 	// ------------------------------------- Static fields -------------------------------------
 
@@ -98,9 +98,9 @@ public class KryoBytes implements BYTES {
 	/**
 	 * KRYO is not thread safe. Each thread should have its own instance.
 	 */
-	private static final ThreadLocal<Object> kryos = new ThreadLocal<Object>() {
+	private final ThreadLocal<KryoObject> kryos = new ThreadLocal<KryoObject>() {
 
-		protected Object initialValue() {
+		protected KryoObject initialValue() {
 			Object obj = null;
 			try {
 				obj = KRYO_CLASS.getConstructor().newInstance();
@@ -111,31 +111,50 @@ public class KryoBytes implements BYTES {
 			} catch (Exception e) {
 				FrameworkNet.getLogger().error(e);
 			}
-			return obj;
-		};
+			return new KryoObject(obj);
+		}
 
 	};
 
-	// ------------------------------------- Constructor -------------------------------------
+	/**
+	 * The register classes for each instance.
+	 */
+	private Class<?>[] classes = null;
 
-	@Override
-	public void register(Class<?>... classes) {
-		if (classes == null || classes.length == 0) return;
-		Object kryo = kryos.get();
+	// ------------------------------------- Private methods -------------------------------------
+
+	/**
+	 * Register classes for current KRYO object.
+	 * @param kryo The KRYO object.
+	 */
+	private void registerClasses(KryoObject kryo) {
+		if (kryo.inited || classes == null) return;
+		kryo.inited = true;
+		Object obj = kryo.kryo;
 		try {
 			for (Class<?> clazz : classes) {
-				registerMethod.invoke(kryo, (Object) clazz);
+				registerMethod.invoke(obj, (Object) clazz);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
+	// ------------------------------------- Override methods -------------------------------------
+
+	@Override
+	public void register(Class<?>... classes) {
+		if (classes == null || classes.length == 0) return;
+		this.classes = classes;
+	}
+
 	@Override
 	public byte[] serialize(Serializable obj) throws Exception {
 		if (obj == null) return null;
+		KryoObject kryo = kryos.get();
+		registerClasses(kryo);
 		Object output = outputClass.getConstructor(OutputStream.class).newInstance(new ByteArrayOutputStream());
-		writeObjectMethod.invoke(kryos.get(), output, obj);
+		writeObjectMethod.invoke(kryo.kryo, output, obj);
 		byte[] bs = (byte[]) outputToArrayMethod.invoke(output);
 		outputCloseMethod.invoke(output);
 		return bs;
@@ -144,11 +163,39 @@ public class KryoBytes implements BYTES {
 	@Override
 	public <T extends Serializable> T deserialize(byte[] bytes) throws Exception {
 		if (bytes == null || bytes.length == 0) return null;
+		KryoObject kryo = kryos.get();
+		registerClasses(kryo);
 		Object input = inputClass.getConstructor(byte[].class).newInstance(bytes);
 		@SuppressWarnings("unchecked")
-		T obj = (T) readObjectMethod.invoke(kryos.get(), input);
+		T obj = (T) readObjectMethod.invoke(kryo.kryo, input);
 		inputClloseMethod.invoke(input);
 		return obj;
+	}
+
+	/**
+	 * The KRYO object data.
+	 * @author ardon
+	 * @date 2021-09-15
+	 */
+	final static class KryoObject {
+
+		/**
+		 * Indicates whether initialization has been executed.
+		 */
+		boolean inited = false;
+		/**
+		 * The KRYO object.
+		 */
+		final Object kryo;
+
+		/**
+		 * Constructor for KRYO object data.
+		 * @param kryo The KRYO object.
+		 */
+		KryoObject(Object kryo) {
+			this.kryo = kryo;
+		}
+
 	}
 
 }

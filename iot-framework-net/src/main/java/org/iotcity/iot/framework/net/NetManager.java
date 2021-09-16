@@ -18,6 +18,7 @@ import org.iotcity.iot.framework.net.channel.NetService;
 import org.iotcity.iot.framework.net.config.NetConfig;
 import org.iotcity.iot.framework.net.config.NetConfigPool;
 import org.iotcity.iot.framework.net.config.NetConfigService;
+import org.iotcity.iot.framework.net.io.NetData;
 import org.iotcity.iot.framework.net.io.NetDataAsyncRequest;
 import org.iotcity.iot.framework.net.io.NetDataAsyncResponse;
 import org.iotcity.iot.framework.net.io.NetDataRequest;
@@ -26,6 +27,7 @@ import org.iotcity.iot.framework.net.io.NetIO;
 import org.iotcity.iot.framework.net.io.NetMessageStatus;
 import org.iotcity.iot.framework.net.io.NetMessageStatusCallback;
 import org.iotcity.iot.framework.net.io.NetMessager;
+import org.iotcity.iot.framework.net.io.NetMessagerCallback;
 import org.iotcity.iot.framework.net.io.NetRequester;
 import org.iotcity.iot.framework.net.io.NetResponseCallback;
 import org.iotcity.iot.framework.net.io.NetResponseResult;
@@ -230,7 +232,7 @@ public final class NetManager implements Configurable<NetConfig> {
 					// Get task service.
 					final NetService taskService = service;
 					// Create service starting task.
-					Runnable task = new PriorityRunnable(0) {
+					Runnable task = new Runnable() {
 
 						@Override
 						public void run() {
@@ -397,6 +399,7 @@ public final class NetManager implements Configurable<NetConfig> {
 	 */
 	public final boolean onMessage(NetIO<?, ?> io, NetMessageStatusCallback callback) throws IllegalArgumentException {
 		if (io == null) throw new IllegalArgumentException("Parameter io can not be null!");
+
 		// Multithreading is used only for asynchronous response mode.
 		if (io.isAsynchronous() && io.isMultithreading()) {
 
@@ -407,34 +410,56 @@ public final class NetManager implements Configurable<NetConfig> {
 
 				@Override
 				public void run() {
-					// Run message processing.
-					NetMessageStatus status = messager.onMessage(io);
-					// Callback message status.
-					if (callback != null) callback.onCallback(status);
+					// Handle message.
+					handleMessage(io, callback);
 				}
 
 			});
-			// Determines whether the thread task is successfully submitted to the thread pool.
-			if (submitted) return true;
 
-			// Run message processing.
-			NetMessageStatus status = messager.onMessage(io);
-			// Callback message status.
-			if (callback != null) callback.onCallback(status);
-			// Return by message result status.
-			return status == NetMessageStatus.OK || status == NetMessageStatus.ACCEPTED;
+			// Return the submitted status or handle message using current thread.
+			return submitted ? true : handleMessage(io, callback);
 
 		} else {
 
+			// Handle message.
+			return handleMessage(io, callback);
+
+		}
+	}
+
+	/**
+	 * Handle the inbound message.
+	 * @param io The network input and output object (required, can not be null).
+	 * @param callback The network message status callback object (optional, set to null value when no callback is required).
+	 * @return Whether message processing succeeded or multithreading started successfully.
+	 */
+	private final boolean handleMessage(NetIO<?, ?> io, NetMessageStatusCallback callback) {
+		try {
 			// Run message processing.
-			NetMessageStatus status = messager.onMessage(io);
+			NetMessageStatus status = messager.onMessage(io, onDataCallback);
 			// Callback message status.
 			if (callback != null) callback.onCallback(status);
 			// Return by message result status.
 			return status == NetMessageStatus.OK || status == NetMessageStatus.ACCEPTED;
-
+		} finally {
+			// Remove all network thread local variables.
+			NetThreadLocal.removeAll();
 		}
 	}
+
+	// Create data callback object.
+	private final NetMessagerCallback onDataCallback = new NetMessagerCallback() {
+
+		@Override
+		public void onRead(NetData data) {
+			// Check data type.
+			if (data.isRequest()) {
+				// Set request to current thread.
+				NetThreadLocal.setCurrentRequest((NetDataRequest) data);
+			}
+		}
+
+	};
 
 	// ------------------------------------- Asynchronous request methods -------------------------------------
 
@@ -459,10 +484,17 @@ public final class NetManager implements Configurable<NetConfig> {
 			// Log error message.
 			FrameworkNet.getLogger().warn(FrameworkNet.getLocale().text("net.message.channel.io.err", channel.getClass().getName(), request.getClass().getName()));
 		}
-		// Send request to remote end.
-		NetMessageStatus status = requester.asyncRequest(io, request, responseClass, callback, timeout);
-		// Return by message result status.
-		return status == NetMessageStatus.ACCEPTED || status == NetMessageStatus.OK;
+		try {
+			// Set request to current thread.
+			NetThreadLocal.setCurrentRequest(request);
+			// Send request to remote end.
+			NetMessageStatus status = requester.asyncRequest(io, request, responseClass, callback, timeout);
+			// Return by message result status.
+			return status == NetMessageStatus.ACCEPTED || status == NetMessageStatus.OK;
+		} finally {
+			// Remove all network thread local variables.
+			NetThreadLocal.removeAll();
+		}
 	}
 
 	/**
@@ -569,8 +601,15 @@ public final class NetManager implements Configurable<NetConfig> {
 			// Log error message.
 			FrameworkNet.getLogger().warn(FrameworkNet.getLocale().text("net.message.channel.io.err", channel.getClass().getName(), request.getClass().getName()));
 		}
-		// Send request to remote end.
-		return requester.syncRequest(io, request, responseClass, timeout);
+		try {
+			// Set request to current thread.
+			NetThreadLocal.setCurrentRequest(request);
+			// Send request to remote end.
+			return requester.syncRequest(io, request, responseClass, timeout);
+		} finally {
+			// Remove all network thread local variables.
+			NetThreadLocal.removeAll();
+		}
 	}
 
 	/**

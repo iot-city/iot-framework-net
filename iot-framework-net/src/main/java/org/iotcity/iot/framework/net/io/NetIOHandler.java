@@ -91,7 +91,7 @@ public class NetIOHandler<READER extends NetReader, SENDER extends NetSender> im
 	@Override
 	public <REQ extends NetDataRequest> REQ getCurrentRequest() {
 		@SuppressWarnings("unchecked")
-		REQ req = (REQ) NetThreadLocal.getCurrentrequest();
+		REQ req = (REQ) NetThreadLocal.getCurrentRequest();
 		return req;
 	}
 

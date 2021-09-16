@@ -11,14 +11,14 @@ import org.iotcity.iot.framework.net.serialization.bytes.BYTES;
  * @author ardon
  * @date 2021-09-15
  */
-public class FSTBytes implements BYTES {
+public final class FSTBytes implements BYTES {
 
 	// ------------------------------------- Static fields -------------------------------------
 
 	/**
 	 * The FST class.
 	 */
-	public static final Class<?> FST_CLASS = getFSTClass();
+	public final static Class<?> FST_CLASS = getFSTClass();
 
 	/**
 	 * The FST configuration object.

@@ -9,7 +9,6 @@ import org.iotcity.iot.framework.core.bus.BusEventPublisher;
 import org.iotcity.iot.framework.core.i18n.LocaleText;
 import org.iotcity.iot.framework.core.logging.Logger;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
-import org.iotcity.iot.framework.core.util.task.PriorityRunnable;
 import org.iotcity.iot.framework.core.util.task.TaskHandler;
 import org.iotcity.iot.framework.net.config.NetConfigInbound;
 import org.iotcity.iot.framework.net.config.NetConfigOutbound;
@@ -706,7 +705,7 @@ public abstract class NetChannelHandler implements NetChannel {
 		// Logs a message.
 		logger.info(locale.text("net.service.channel.open.retry", reopenOnClosedDelay, channelID, service.serviceID));
 		// Reopen this channel.
-		reopenTaskID.set(TaskHandler.getDefaultHandler().addDelayTask(new PriorityRunnable() {
+		reopenTaskID.set(TaskHandler.getDefaultHandler().addDelayTask(new Runnable() {
 
 			@Override
 			public void run() {
