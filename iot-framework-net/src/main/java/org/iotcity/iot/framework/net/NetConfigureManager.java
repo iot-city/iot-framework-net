@@ -37,4 +37,8 @@ public final class NetConfigureManager extends PropertiesConfigureManager {
 
 	}
 
+	@Override
+	protected void onPerformed() {
+	}
+
 }
