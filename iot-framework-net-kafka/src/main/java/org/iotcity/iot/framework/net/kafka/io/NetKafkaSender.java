@@ -10,7 +10,6 @@ import org.apache.kafka.clients.producer.internals.FutureRecordMetadata;
 import org.iotcity.iot.framework.net.io.NetMessageStatus;
 import org.iotcity.iot.framework.net.io.NetSenderHandler;
 import org.iotcity.iot.framework.net.kafka.NetKafkaChannel;
-import org.iotcity.iot.framework.net.kafka.NetKafkaTopicPartition;
 
 /**
  * The kafka message sender object.

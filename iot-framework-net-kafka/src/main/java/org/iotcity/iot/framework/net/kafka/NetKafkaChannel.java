@@ -28,6 +28,7 @@ import org.iotcity.iot.framework.net.kafka.config.NetKafkaConfigConsumer;
 import org.iotcity.iot.framework.net.kafka.config.NetKafkaConfigPartition;
 import org.iotcity.iot.framework.net.kafka.config.NetKafkaConfigProducer;
 import org.iotcity.iot.framework.net.kafka.io.NetKafkaSender;
+import org.iotcity.iot.framework.net.kafka.io.NetKafkaTopicPartition;
 
 /**
  * The kafka channel for message consumer and producer.

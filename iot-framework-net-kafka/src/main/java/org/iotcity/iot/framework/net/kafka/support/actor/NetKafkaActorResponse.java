@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import org.iotcity.iot.framework.core.util.helper.JavaHelper;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
-import org.iotcity.iot.framework.net.kafka.NetKafkaTopicPartition;
+import org.iotcity.iot.framework.net.kafka.io.NetKafkaTopicPartition;
 import org.iotcity.iot.framework.net.support.actor.NetActorResponse;
 import org.iotcity.iot.framework.net.support.actor.NetActorResult;
 

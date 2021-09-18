@@ -20,6 +20,7 @@ import org.iotcity.iot.framework.net.io.NetResponseCallback;
 import org.iotcity.iot.framework.net.io.NetResponseResult;
 import org.iotcity.iot.framework.net.kafka.data.ClassA;
 import org.iotcity.iot.framework.net.kafka.data.ClassB;
+import org.iotcity.iot.framework.net.kafka.io.NetKafkaTopicPartition;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequest;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequestData;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorResponse;
@@ -62,9 +63,6 @@ public class NetKafkaTest extends TestCase {
 				e.printStackTrace();
 			}
 		}
-
-		// Stop services.
-		FrameworkNet.getGlobalNetManager().stopAllServices();
 
 		JavaHelper.log("----------------------------- TEST KAFKA COMPLETE -----------------------------");
 

@@ -3,7 +3,7 @@ package org.iotcity.iot.framework.net.kafka.support.actor;
 import java.io.Serializable;
 
 import org.iotcity.iot.framework.core.util.helper.JavaHelper;
-import org.iotcity.iot.framework.net.kafka.NetKafkaTopicPartition;
+import org.iotcity.iot.framework.net.kafka.io.NetKafkaTopicPartition;
 import org.iotcity.iot.framework.net.support.actor.NetActorCommand;
 import org.iotcity.iot.framework.net.support.actor.NetActorHeader;
 

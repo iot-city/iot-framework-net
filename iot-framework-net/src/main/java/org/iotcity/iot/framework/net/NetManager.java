@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.iotcity.iot.framework.IoTFramework;
 import org.iotcity.iot.framework.core.config.Configurable;
+import org.iotcity.iot.framework.core.hook.HookListener;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
 import org.iotcity.iot.framework.core.util.helper.SystemHelper;
 import org.iotcity.iot.framework.core.util.task.PriorityRunnable;
@@ -107,6 +108,16 @@ public final class NetManager implements Configurable<NetConfig> {
 		}
 		// Set the task handler.
 		this.setTaskHandler(taskHandler);
+		// Add system hook.
+		IoTFramework.getHookmanager().addHook(new HookListener() {
+
+			@Override
+			public void onShuttingDown() {
+				// Stop all services on shutting down.
+				stopAllServices();
+			}
+
+		}, 1000);
 	}
 
 	// ------------------------------------- Public methods -------------------------------------
