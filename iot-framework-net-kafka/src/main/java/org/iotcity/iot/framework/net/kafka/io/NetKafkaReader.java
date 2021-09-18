@@ -35,14 +35,14 @@ public final class NetKafkaReader<K, V> extends NetReaderHandler {
 	/**
 	 * Gets the client that consumes records from a Kafka cluster.
 	 */
-	public KafkaConsumer<K, V> getConsumer() {
+	public final KafkaConsumer<K, V> getConsumer() {
 		return consumer;
 	}
 
 	/**
 	 * Gets the key/value pair to be received from Kafka.
 	 */
-	public ConsumerRecord<K, V> getRecord() {
+	public final ConsumerRecord<K, V> getRecord() {
 		return record;
 	}
 

@@ -136,7 +136,7 @@ public abstract class NetKafkaChannel<K, V> extends NetChannelHandler {
 	/**
 	 * Gets the kafka message sender object (returns null if there is no sender).
 	 */
-	protected NetKafkaSender<K, V> getSender() {
+	protected final NetKafkaSender<K, V> getSender() {
 		return this.sender;
 	}
 

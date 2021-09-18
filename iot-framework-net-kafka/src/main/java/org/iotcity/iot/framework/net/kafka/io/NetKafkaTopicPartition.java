@@ -48,7 +48,7 @@ public final class NetKafkaTopicPartition implements Serializable {
 	// --------------------------- Public methods ----------------------------
 
 	@Override
-	public String toString() {
+	public final String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("{topic=\"");
 		sb.append(topic);

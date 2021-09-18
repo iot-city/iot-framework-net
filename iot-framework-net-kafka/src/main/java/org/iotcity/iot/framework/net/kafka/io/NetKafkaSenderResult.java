@@ -34,14 +34,14 @@ public final class NetKafkaSenderResult {
 	/**
 	 * Gets the network message status.
 	 */
-	public NetMessageStatus getStatus() {
+	public final NetMessageStatus getStatus() {
 		return status;
 	}
 
 	/**
 	 * Gets the future represents the result of an asynchronous computation (returns null if there is no future in result).
 	 */
-	public Future<RecordMetadata> getFuture() {
+	public final Future<RecordMetadata> getFuture() {
 		return future;
 	}
 

@@ -48,14 +48,14 @@ public final class NetKafkaSender<K, V> extends NetSenderHandler {
 	/**
 	 * Gets the Kafka client that publishes records to the Kafka cluster (returns null if there is no producer in sender).
 	 */
-	public KafkaProducer<K, V> getProducer() {
+	public final KafkaProducer<K, V> getProducer() {
 		return producer;
 	}
 
 	/**
 	 * Gets the producer callback partition information (returns null if the callback data is not required).
 	 */
-	public NetKafkaTopicPartition getCallback() {
+	public final NetKafkaTopicPartition getCallback() {
 		return callback;
 	}
 
@@ -64,7 +64,7 @@ public final class NetKafkaSender<K, V> extends NetSenderHandler {
 	 * @param record A key/value pair to be sent to Kafka.
 	 * @return The kafka sender result after execution (not null).
 	 */
-	public NetKafkaSenderResult send(ProducerRecord<K, V> record) {
+	public final NetKafkaSenderResult send(ProducerRecord<K, V> record) {
 		return send(record, null);
 	}
 
@@ -74,7 +74,7 @@ public final class NetKafkaSender<K, V> extends NetSenderHandler {
 	 * @param callback The status callback to execute when the record has been acknowledged by the server.
 	 * @return The kafka sender result after execution (not null).
 	 */
-	public NetKafkaSenderResult send(ProducerRecord<K, V> record, NetKafkaSenderCallback callback) {
+	public final NetKafkaSenderResult send(ProducerRecord<K, V> record, NetKafkaSenderCallback callback) {
 		if (producer == null) return new NetKafkaSenderResult(NetMessageStatus.NO_SENDER, null);
 		Future<RecordMetadata> future = null;
 		try {

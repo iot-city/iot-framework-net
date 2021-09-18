@@ -42,7 +42,7 @@ public final class NetKafkaStringChannel extends NetKafkaChannel<String, String>
 	}
 
 	@Override
-	public NetIO<?, ?> getToRemoteIO() {
+	public final NetIO<?, ?> getToRemoteIO() {
 		if (toRemoteIO != null) return toRemoteIO;
 		// Gets the sender.
 		NetKafkaSender<String, String> sender = this.getSender();
@@ -56,7 +56,7 @@ public final class NetKafkaStringChannel extends NetKafkaChannel<String, String>
 	}
 
 	@Override
-	protected NetIO<?, ?> getFromRemoteIO(KafkaConsumer<String, String> consumer, ConsumerRecord<String, String> record) {
+	protected final NetIO<?, ?> getFromRemoteIO(KafkaConsumer<String, String> consumer, ConsumerRecord<String, String> record) {
 		return new NetKafkaIOString(this, new NetKafkaReader<>(consumer, record), this.getSender());
 	}
 
