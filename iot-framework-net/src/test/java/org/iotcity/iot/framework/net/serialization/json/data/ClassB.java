@@ -1,6 +1,7 @@
 package org.iotcity.iot.framework.net.serialization.json.data;
 
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * @author ardon
@@ -13,6 +14,7 @@ public class ClassB implements Serializable {
 	public int index;
 	public String name;
 	public String desc;
+	public Date time = new Date();
 
 	public ClassB() {
 	}

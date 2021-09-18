@@ -3,9 +3,13 @@ package org.iotcity.iot.framework.net.serialization.bytes.impls;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.iotcity.iot.framework.core.util.pool.ObjectPool;
 import org.iotcity.iot.framework.net.FrameworkNet;
+import org.iotcity.iot.framework.net.config.NetConfigSerialization;
 import org.iotcity.iot.framework.net.serialization.bytes.BYTES;
 
 /**
@@ -27,6 +31,10 @@ public final class KryoBytes implements BYTES {
 	 */
 	private static Class<?> inputClass;
 	/**
+	 * The constructor of input class.
+	 */
+	private static Constructor<?> inputConstructor;
+	/**
 	 * Input close method.
 	 */
 	private static Method inputClloseMethod;
@@ -34,6 +42,10 @@ public final class KryoBytes implements BYTES {
 	 * Output class.
 	 */
 	private static Class<?> outputClass;
+	/**
+	 * The constructor of output class.
+	 */
+	private static Constructor<?> outputConstructor;
 	/**
 	 * Output to array method.
 	 */
@@ -61,8 +73,10 @@ public final class KryoBytes implements BYTES {
 			try {
 				// Input and output methods.
 				inputClass = Class.forName("com.esotericsoftware.kryo.io.Input");
+				inputConstructor = inputClass.getConstructor(byte[].class);
 				inputClloseMethod = inputClass.getMethod("close");
 				outputClass = Class.forName("com.esotericsoftware.kryo.io.Output");
+				outputConstructor = outputClass.getConstructor(OutputStream.class);
 				outputToArrayMethod = outputClass.getMethod("toBytes");
 				outputCloseMethod = outputClass.getMethod("close");
 				// Gets BYTES methods.
@@ -96,51 +110,91 @@ public final class KryoBytes implements BYTES {
 	// ------------------------------------- Private fields -------------------------------------
 
 	/**
-	 * KRYO is not thread safe. Each thread should have its own instance.
-	 */
-	private final ThreadLocal<KryoObject> kryos = new ThreadLocal<KryoObject>() {
-
-		protected KryoObject initialValue() {
-			Object obj = null;
-			try {
-				obj = KRYO_CLASS.getConstructor().newInstance();
-				Method regs = KRYO_CLASS.getMethod("setRegistrationRequired", new Class[] {
-					boolean.class
-				});
-				regs.invoke(obj, false);
-			} catch (Exception e) {
-				FrameworkNet.getLogger().error(e);
-			}
-			return new KryoObject(obj);
-		}
-
-	};
-
-	/**
 	 * The register classes for each instance.
 	 */
 	private Class<?>[] classes = null;
+	/**
+	 * The maximum capacity of free objects to store the serialization instance in object pool.
+	 */
+	private int capacity = 8;
+	/**
+	 * The object pool for multi-threading objects.
+	 */
+	private ObjectPool<KryoObject> pool;
+	/**
+	 * The default KRYO instance.
+	 */
+	private KryoObject instance;
+
+	// ------------------------------------- Constructor -------------------------------------
+
+	/**
+	 * Constructor for KRYO BYTES converter.
+	 */
+	public KryoBytes() {
+		// Create the pool.
+		pool = createPool(capacity);
+		// Create the default instance.
+		instance = createKRYOObject();
+	}
 
 	// ------------------------------------- Private methods -------------------------------------
 
 	/**
-	 * Register classes for current KRYO object.
-	 * @param kryo The KRYO object.
+	 * Create the object pool (returns null if no capacity).
+	 * @param capacity The maximum capacity of free objects to store the serialization instance in object pool.
+	 * @return The object pool instance.
 	 */
-	private void registerClasses(KryoObject kryo) {
-		if (kryo.inited || classes == null) return;
-		kryo.inited = true;
-		Object obj = kryo.kryo;
-		try {
-			for (Class<?> clazz : classes) {
-				registerMethod.invoke(obj, (Object) clazz);
+	private ObjectPool<KryoObject> createPool(final int capacity) {
+		// Create a new thread safe object pool.
+		return new ObjectPool<KryoObject>(true, false, capacity) {
+
+			private AtomicInteger creation = new AtomicInteger();
+
+			@Override
+			protected KryoObject create() {
+				if (creation.get() >= capacity || creation.incrementAndGet() > capacity) {
+					return instance;
+				} else {
+					return createKRYOObject();
+				}
 			}
+
+			@Override
+			protected void reset(KryoObject object) {
+			}
+
+		};
+	}
+
+	/**
+	 * Create a KRYO object.
+	 */
+	private KryoObject createKRYOObject() {
+		Object obj = null;
+		try {
+			obj = KRYO_CLASS.getConstructor().newInstance();
+			Method regs = KRYO_CLASS.getMethod("setRegistrationRequired", new Class[] {
+				boolean.class
+			});
+			regs.invoke(obj, false);
 		} catch (Exception e) {
-			e.printStackTrace();
+			FrameworkNet.getLogger().error(e);
 		}
+		return new KryoObject(obj, classes);
 	}
 
 	// ------------------------------------- Override methods -------------------------------------
+
+	@Override
+	public boolean config(NetConfigSerialization data, boolean reset) {
+		if (data == null || data.capacity == capacity || data.capacity <= 0) return true;
+		capacity = data.capacity;
+		ObjectPool<KryoObject> prev = pool;
+		pool = createPool(capacity);
+		prev.destroy();
+		return true;
+	}
 
 	@Override
 	public void register(Class<?>... classes) {
@@ -151,10 +205,17 @@ public final class KryoBytes implements BYTES {
 	@Override
 	public byte[] serialize(Serializable obj) throws Exception {
 		if (obj == null) return null;
-		KryoObject kryo = kryos.get();
-		registerClasses(kryo);
-		Object output = outputClass.getConstructor(OutputStream.class).newInstance(new ByteArrayOutputStream());
-		writeObjectMethod.invoke(kryo.kryo, output, obj);
+		KryoObject kryo = pool.obtain();
+		kryo.registerClasses(classes);
+		Object output = outputConstructor.newInstance(new ByteArrayOutputStream());
+		if (kryo == instance) {
+			synchronized (kryo) {
+				writeObjectMethod.invoke(kryo.kryo, output, obj);
+			}
+		} else {
+			writeObjectMethod.invoke(kryo.kryo, output, obj);
+			pool.free(kryo);
+		}
 		byte[] bs = (byte[]) outputToArrayMethod.invoke(output);
 		outputCloseMethod.invoke(output);
 		return bs;
@@ -163,13 +224,22 @@ public final class KryoBytes implements BYTES {
 	@Override
 	public <T extends Serializable> T deserialize(byte[] bytes) throws Exception {
 		if (bytes == null || bytes.length == 0) return null;
-		KryoObject kryo = kryos.get();
-		registerClasses(kryo);
-		Object input = inputClass.getConstructor(byte[].class).newInstance(bytes);
-		@SuppressWarnings("unchecked")
-		T obj = (T) readObjectMethod.invoke(kryo.kryo, input);
+		KryoObject kryo = pool.obtain();
+		kryo.registerClasses(classes);
+		Object input = inputConstructor.newInstance(bytes);
+		Object obj;
+		if (kryo == instance) {
+			synchronized (kryo) {
+				obj = readObjectMethod.invoke(kryo.kryo, input);
+			}
+		} else {
+			obj = readObjectMethod.invoke(kryo.kryo, input);
+			pool.free(kryo);
+		}
 		inputClloseMethod.invoke(input);
-		return obj;
+		@SuppressWarnings("unchecked")
+		T ret = (T) obj;
+		return ret;
 	}
 
 	/**
@@ -180,20 +250,45 @@ public final class KryoBytes implements BYTES {
 	final static class KryoObject {
 
 		/**
-		 * Indicates whether initialization has been executed.
+		 * Registered class.
 		 */
-		boolean inited = false;
+		private Class<?>[] classes;
+		/**
+		 * The locker for class register.
+		 */
+		private final Object lock = new Object();
 		/**
 		 * The KRYO object.
 		 */
-		final Object kryo;
+		private final Object kryo;
 
 		/**
 		 * Constructor for KRYO object data.
 		 * @param kryo The KRYO object.
+		 * @param classes The classes to be registered.
 		 */
-		KryoObject(Object kryo) {
+		KryoObject(Object kryo, Class<?>[] classes) {
 			this.kryo = kryo;
+			registerClasses(classes);
+		}
+
+		/**
+		 * Register classes for current KRYO object.
+		 * @param classes The classes to be registered.
+		 */
+		void registerClasses(Class<?>[] classes) {
+			if (classes == null || this.classes == classes) return;
+			synchronized (lock) {
+				if (this.classes == classes) return;
+				this.classes = classes;
+				try {
+					for (Class<?> clazz : classes) {
+						registerMethod.invoke(kryo, (Object) clazz);
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
 		}
 
 	}

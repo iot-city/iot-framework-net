@@ -3,10 +3,11 @@ package org.iotcity.iot.framework.net.serialization.json.impls;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.text.DateFormat;
 
-import org.iotcity.iot.framework.core.util.config.PropertiesMap;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
 import org.iotcity.iot.framework.net.FrameworkNet;
+import org.iotcity.iot.framework.net.config.NetConfigSerialization;
 import org.iotcity.iot.framework.net.serialization.json.JSON;
 
 /**
@@ -104,7 +105,7 @@ public final class GsonJSON implements JSON {
 	/**
 	 * The GSON object.
 	 */
-	private final Object gson;
+	private Object gson;
 
 	// ------------------------------------- Constructor -------------------------------------
 
@@ -112,19 +113,37 @@ public final class GsonJSON implements JSON {
 	 * Constructor for GsonJSON converter.
 	 */
 	public GsonJSON() {
-		Object obj = null;
 		try {
-			obj = JSON_CLASS.getConstructor().newInstance();
+			gson = JSON_CLASS.getConstructor().newInstance();
 		} catch (Exception e) {
 			FrameworkNet.getLogger().error(e);
 		}
-		this.gson = obj;
 	}
 
 	// ------------------------------------- Override methods -------------------------------------
 
 	@Override
-	public void config(PropertiesMap<Object> data) {
+	public boolean config(NetConfigSerialization data, boolean reset) {
+		if (data == null) return true;
+		String dateFormat = StringHelper.isEmptyWithTrim(data.dateFormat) ? null : data.dateFormat;
+		try {
+			Class<?> bclass = Class.forName("com.google.gson.GsonBuilder");
+			Method method = JSON_CLASS.getMethod("newBuilder");
+			Object builder = method.invoke(this.gson);
+			if (dateFormat == null) {
+				method = bclass.getMethod("setDateFormat", int.class, int.class);
+				method.invoke(builder, DateFormat.DEFAULT, DateFormat.DEFAULT);
+			} else {
+				method = bclass.getMethod("setDateFormat", String.class);
+				method.invoke(builder, dateFormat);
+			}
+			method = bclass.getMethod("create");
+			this.gson = method.invoke(builder);
+			return true;
+		} catch (Exception e) {
+			FrameworkNet.getLogger().error(e);
+			return false;
+		}
 	}
 
 	@Override

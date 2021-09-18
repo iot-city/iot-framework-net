@@ -1,5 +1,6 @@
 package org.iotcity.iot.framework.net.serialization.bytes;
 
+import org.iotcity.iot.framework.net.config.NetConfigSerialization;
 import org.iotcity.iot.framework.net.serialization.bytes.impls.FSTBytes;
 import org.iotcity.iot.framework.net.serialization.bytes.impls.JavaBytes;
 import org.iotcity.iot.framework.net.serialization.bytes.impls.KryoBytes;
@@ -12,21 +13,33 @@ import org.iotcity.iot.framework.net.serialization.bytes.impls.KryoBytes;
 public final class BYTESFactory {
 
 	/**
-	 * The locker for BYTES class.
+	 * The global configuration data for converters.
 	 */
-	private static final Object classLock = new Object();
+	private static final NetConfigSerialization config = new NetConfigSerialization();
+	/**
+	 * The locker for BYTES.
+	 */
+	private static final Object lcok = new Object();
 	/**
 	 * BYTES converter class.
 	 */
 	private static Class<?> bytesClass;
 	/**
-	 * The locker for instance.
-	 */
-	private static final Object instanceLock = new Object();
-	/**
 	 * BYTES default converter object.
 	 */
 	private static BYTES instance;
+
+	/**
+	 * Set the default configuration data for default BYTES converter.
+	 * @param data The configuration data.
+	 */
+	public static final void setDefaultConfiguration(NetConfigSerialization data) {
+		if (data == null) return;
+		config.capacity = data.capacity;
+		config.dateFormat = data.dateFormat;
+		BYTES obj = instance;
+		if (obj != null) obj.config(config, false);
+	}
 
 	/**
 	 * Set the default BYTES converter class (the default BYTES converter class will be replaced by this new one).
@@ -34,8 +47,9 @@ public final class BYTESFactory {
 	 */
 	public static final void setDefaultBytesClass(Class<BYTES> clazz) {
 		if (clazz == null) return;
-		synchronized (classLock) {
+		synchronized (lcok) {
 			bytesClass = clazz;
+			instance = null;
 		}
 	}
 
@@ -44,13 +58,13 @@ public final class BYTESFactory {
 	 */
 	public static final Class<?> getDefaultBytesClass() {
 		if (bytesClass != null) return bytesClass;
-		synchronized (classLock) {
+		synchronized (lcok) {
 			if (bytesClass != null) return bytesClass;
 
-			if (KryoBytes.KRYO_CLASS != null) {
-				bytesClass = KryoBytes.class;
-			} else if (FSTBytes.FST_CLASS != null) {
+			if (FSTBytes.FST_CLASS != null) {
 				bytesClass = FSTBytes.class;
+			} else if (KryoBytes.KRYO_CLASS != null) {
+				bytesClass = KryoBytes.class;
 			} else {
 				bytesClass = JavaBytes.class;
 			}
@@ -65,7 +79,7 @@ public final class BYTESFactory {
 	 */
 	public static final void setDefaultBytes(BYTES bytes) {
 		if (bytes == null) return;
-		synchronized (instanceLock) {
+		synchronized (lcok) {
 			instance = bytes;
 		}
 	}
@@ -75,9 +89,10 @@ public final class BYTESFactory {
 	 */
 	public static final BYTES getDefaultBytes() {
 		if (instance != null) return instance;
-		synchronized (instanceLock) {
+		synchronized (lcok) {
 			if (instance != null) return instance;
 			instance = newBytes();
+			instance.config(config, false);
 		}
 		return instance;
 	}

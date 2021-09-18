@@ -2,12 +2,15 @@ package org.iotcity.iot.framework.net.serialization.bytes;
 
 import java.io.Serializable;
 
+import org.iotcity.iot.framework.core.config.Configurable;
+import org.iotcity.iot.framework.net.config.NetConfigSerialization;
+
 /**
  * The serializable converter for serialization.
  * @author ardon
  * @date 2021-09-15
  */
-public interface BYTES {
+public interface BYTES extends Configurable<NetConfigSerialization> {
 
 	/**
 	 * Register the data types that need to be serialized.

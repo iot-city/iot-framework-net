@@ -5,7 +5,9 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.iotcity.iot.framework.core.util.helper.ConvertHelper;
 import org.iotcity.iot.framework.core.util.helper.JavaHelper;
+import org.iotcity.iot.framework.net.config.NetConfigSerialization;
 import org.iotcity.iot.framework.net.serialization.json.data.ClassA;
 import org.iotcity.iot.framework.net.serialization.json.data.ClassB;
 
@@ -34,6 +36,15 @@ public class JSONTest extends TestCase {
 		JavaHelper.log("Object to JSON string A: " + str);
 		ClassA aobj = json.toObject(ClassA.class, str);
 		JavaHelper.log("JSON string to Object A: " + aobj);
+
+		NetConfigSerialization conf = new NetConfigSerialization();
+		conf.dateFormat = "yyyy-MM-dd HH:mm";
+		json.config(conf, false);
+
+		str = json.toJSONString(a);
+		JavaHelper.log("Config date format to JSON string A: " + str);
+		aobj = json.toObject(ClassA.class, str);
+		JavaHelper.log("JSON string to Date A: " + ConvertHelper.formatDate(aobj.time));
 
 		JavaHelper.log("----------------------------- TEST JSON OBJECT TYPE -----------------------------");
 

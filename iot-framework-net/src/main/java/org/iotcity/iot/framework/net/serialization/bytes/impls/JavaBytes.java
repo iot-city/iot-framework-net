@@ -6,6 +6,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 
+import org.iotcity.iot.framework.net.config.NetConfigSerialization;
 import org.iotcity.iot.framework.net.serialization.bytes.BYTES;
 
 /**
@@ -14,6 +15,11 @@ import org.iotcity.iot.framework.net.serialization.bytes.BYTES;
  * @date 2021-09-15
  */
 public final class JavaBytes implements BYTES {
+
+	@Override
+	public boolean config(NetConfigSerialization data, boolean reset) {
+		return true;
+	}
 
 	@Override
 	public void register(Class<?>... classes) {

@@ -1,5 +1,6 @@
 package org.iotcity.iot.framework.net.serialization.json;
 
+import org.iotcity.iot.framework.net.config.NetConfigSerialization;
 import org.iotcity.iot.framework.net.serialization.json.impls.FastJSON;
 import org.iotcity.iot.framework.net.serialization.json.impls.GsonJSON;
 import org.iotcity.iot.framework.net.serialization.json.impls.NoneJSON;
@@ -12,30 +13,43 @@ import org.iotcity.iot.framework.net.serialization.json.impls.NoneJSON;
 public final class JSONFactory {
 
 	/**
-	 * The locker for JSON class.
+	 * The global configuration data for converters.
 	 */
-	private static final Object classLock = new Object();
+	private static final NetConfigSerialization config = new NetConfigSerialization();
+	/**
+	 * The locker for JSON.
+	 */
+	private static final Object lock = new Object();
 	/**
 	 * JSON converter class.
 	 */
 	private static Class<?> jsonClass;
-	/**
-	 * The locker for instance.
-	 */
-	private static final Object instanceLock = new Object();
 	/**
 	 * JSON default converter object.
 	 */
 	private static JSON instance;
 
 	/**
+	 * Set the default configuration data for default JSON converter.
+	 * @param data The configuration data.
+	 */
+	public static final void setDefaultConfiguration(NetConfigSerialization data) {
+		if (data == null) return;
+		config.capacity = data.capacity;
+		config.dateFormat = data.dateFormat;
+		JSON obj = instance;
+		if (obj != null) obj.config(config, false);
+	}
+
+	/**
 	 * Set the default JSON converter class (the default JSON converter class will be replaced by this new one).
 	 * @param clazz The JSON converter class.
 	 */
 	public static final void setDefaultJSONClass(Class<JSON> clazz) {
-		if (clazz == null) return;
-		synchronized (classLock) {
+		if (clazz == null || jsonClass == clazz) return;
+		synchronized (lock) {
 			jsonClass = clazz;
+			instance = null;
 		}
 	}
 
@@ -44,7 +58,7 @@ public final class JSONFactory {
 	 */
 	public static final Class<?> getDefaultJSONClass() {
 		if (jsonClass != null) return jsonClass;
-		synchronized (classLock) {
+		synchronized (lock) {
 			if (jsonClass != null) return jsonClass;
 
 			if (FastJSON.JSON_CLASS != null) {
@@ -65,7 +79,7 @@ public final class JSONFactory {
 	 */
 	public static final void setDefaultJSON(JSON json) {
 		if (json == null) return;
-		synchronized (instanceLock) {
+		synchronized (lock) {
 			instance = json;
 		}
 	}
@@ -75,9 +89,10 @@ public final class JSONFactory {
 	 */
 	public static final JSON getDefaultJSON() {
 		if (instance != null) return instance;
-		synchronized (instanceLock) {
+		synchronized (lock) {
 			if (instance != null) return instance;
 			instance = newJSON();
+			instance.config(config, false);
 		}
 		return instance;
 	}

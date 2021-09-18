@@ -21,10 +21,14 @@ import org.iotcity.iot.framework.net.io.NetResponseResult;
 import org.iotcity.iot.framework.net.kafka.data.ClassA;
 import org.iotcity.iot.framework.net.kafka.data.ClassB;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequest;
+import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorRequestData;
 import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorResponse;
+import org.iotcity.iot.framework.net.kafka.support.actor.NetKafkaActorResponseData;
 import org.iotcity.iot.framework.net.kafka.support.bus.NetKafkaChannelEvent;
+import org.iotcity.iot.framework.net.serialization.bytes.BYTESFactory;
 import org.iotcity.iot.framework.net.support.actor.NetActorCommand;
 import org.iotcity.iot.framework.net.support.actor.NetActorHeader;
+import org.iotcity.iot.framework.net.support.actor.NetActorResult;
 import org.iotcity.iot.framework.net.support.bus.NetChannelEventData;
 
 import junit.framework.TestCase;
@@ -39,7 +43,7 @@ public class NetKafkaTest extends TestCase {
 	private Logger logger = FrameworkNet.getLogger();
 	private static AtomicInteger index = new AtomicInteger();
 	private static AtomicInteger returned = new AtomicInteger();
-	private static final int MAX_SEND = 10000;
+	private static final int MAX_SEND = 20000;
 
 	public void testKafka() {
 
@@ -78,6 +82,19 @@ public class NetKafkaTest extends TestCase {
 
 				NetChannelEventData data = event.getEventData();
 				if (data.getState() != NetChannelState.OPENED) return false;
+
+				BYTESFactory.getDefaultBytes().register(new Class<?>[] {
+					ClassA.class,
+					ClassB.class,
+					Serializable.class,
+					NetKafkaTopicPartition.class,
+					NetActorHeader.class,
+					NetActorCommand.class,
+					NetKafkaTopicPartition.class,
+					NetActorResult.class,
+					NetKafkaActorRequestData.class,
+					NetKafkaActorResponseData.class
+				});
 
 				TaskHandler.getDefaultHandler().addDelayTask(new Runnable() {
 

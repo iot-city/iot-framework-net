@@ -4,9 +4,9 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 
-import org.iotcity.iot.framework.core.util.config.PropertiesMap;
 import org.iotcity.iot.framework.core.util.helper.StringHelper;
 import org.iotcity.iot.framework.net.FrameworkNet;
+import org.iotcity.iot.framework.net.config.NetConfigSerialization;
 import org.iotcity.iot.framework.net.serialization.json.JSON;
 
 /**
@@ -28,6 +28,10 @@ public final class FastJSON implements JSON {
 	 */
 	private static Method toJSONMethod;
 	/**
+	 * To JSON string with specified datetime format.
+	 */
+	private static Method toJSONDateMethod;
+	/**
 	 * To java object method.
 	 */
 	private static Method toObjectMethod;
@@ -47,20 +51,42 @@ public final class FastJSON implements JSON {
 	 * Get array object by type method.
 	 */
 	private static Method getArrayObjectMethodByType;
+	/**
+	 * The feature array for parameter.
+	 */
+	private static Object seriFeatureArray;
+	/**
+	 * The feature array for parameter.
+	 */
+	private static Object featureArray;
 
 	static {
 		// Check for valid class.
 		if (JSON_CLASS != null) {
 			try {
+				// Set to safe mode.
+				Class<?> confClazz = Class.forName("com.alibaba.fastjson.parser.ParserConfig");
+				Method confMethod = confClazz.getMethod("getGlobalInstance");
+				Method setSafeMethod = confClazz.getMethod("setSafeMode", boolean.class);
+				Object conf = confMethod.invoke(null);
+				setSafeMethod.invoke(conf, true);
 				// Gets JSON methods.
 				toJSONMethod = JSON_CLASS.getMethod("toJSONString", new Class[] {
 					Object.class
+				});
+				Class<?> sfeatures = Class.forName("[Lcom.alibaba.fastjson.serializer.SerializerFeature;");
+				seriFeatureArray = Array.newInstance(Class.forName("com.alibaba.fastjson.serializer.SerializerFeature"), 0);
+				toJSONDateMethod = JSON_CLASS.getMethod("toJSONStringWithDateFormat", new Class[] {
+					Object.class,
+					String.class,
+					sfeatures
 				});
 				toObjectMethod = JSON_CLASS.getMethod("parseObject", new Class[] {
 					String.class,
 					Class.class
 				});
 				Class<?> features = Class.forName("[Lcom.alibaba.fastjson.parser.Feature;");
+				featureArray = Array.newInstance(Class.forName("com.alibaba.fastjson.parser.Feature"), 0);
 				toObjectMethodByType = JSON_CLASS.getMethod("parseObject", new Class[] {
 					String.class,
 					Type.class,
@@ -95,6 +121,13 @@ public final class FastJSON implements JSON {
 		}
 	}
 
+	// ------------------------------------- Private fileds -------------------------------------
+
+	/**
+	 * The datetime format.
+	 */
+	private String dateFormat;
+
 	// ------------------------------------- Constructor -------------------------------------
 
 	/**
@@ -106,13 +139,20 @@ public final class FastJSON implements JSON {
 	// ------------------------------------- Override methods -------------------------------------
 
 	@Override
-	public void config(PropertiesMap<Object> data) {
+	public boolean config(NetConfigSerialization data, boolean reset) {
+		if (data == null) return true;
+		dateFormat = StringHelper.isEmptyWithTrim(data.dateFormat) ? null : data.dateFormat;
+		return true;
 	}
 
 	@Override
 	public String toJSONString(Object obj) throws Exception {
 		if (obj == null) return null;
-		return (String) toJSONMethod.invoke(null, obj);
+		if (dateFormat == null) {
+			return (String) toJSONMethod.invoke(null, obj);
+		} else {
+			return (String) toJSONDateMethod.invoke(null, obj, dateFormat, seriFeatureArray);
+		}
 	}
 
 	@Override
@@ -127,7 +167,7 @@ public final class FastJSON implements JSON {
 	public <T> T toObject(Type type, String str) throws Exception {
 		if (str == null) return null;
 		@SuppressWarnings("unchecked")
-		T obj = (T) toObjectMethodByType.invoke(null, str, type, null);
+		T obj = (T) toObjectMethodByType.invoke(null, str, type, featureArray);
 		return obj;
 	}
 

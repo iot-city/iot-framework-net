@@ -5,6 +5,8 @@ import org.iotcity.iot.framework.core.config.PropertiesConfigFile;
 import org.iotcity.iot.framework.core.config.PropertiesConfigure;
 import org.iotcity.iot.framework.core.util.config.PropertiesLoader;
 import org.iotcity.iot.framework.net.config.NetConfig;
+import org.iotcity.iot.framework.net.serialization.bytes.BYTESFactory;
+import org.iotcity.iot.framework.net.serialization.json.JSONFactory;
 
 /**
  * @author ardon
@@ -28,8 +30,13 @@ public final class NetConfigure extends PropertiesConfigure<NetConfig> {
 		if (configurable == null || props == null) return false;
 		// Get net configuration data.
 		NetConfig config = PropertiesLoader.getConfigBean(NetConfig.class, props, getPrefixKey());
+		// Check configuration.
+		if (config == null) return true;
+		// Set default configuration for serialization.
+		JSONFactory.setDefaultConfiguration(config.serialization);
+		BYTESFactory.setDefaultConfiguration(config.serialization);
 		// Do manager configuration.
-		return config == null ? false : configurable.config(config, reset);
+		return configurable.config(config, reset);
 	}
 
 }

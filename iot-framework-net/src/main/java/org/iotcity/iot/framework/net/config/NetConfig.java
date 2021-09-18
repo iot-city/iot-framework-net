@@ -13,6 +13,10 @@ public class NetConfig {
 	 */
 	public String serverID;
 	/**
+	 * The configuration for serialization objects.
+	 */
+	public NetConfigSerialization serialization;
+	/**
 	 * The thread pool executor configure data of net manager.<br/>
 	 * 1. This configuration will be used for message and request task processing.<br/>
 	 * 2. When without this option, the global task handler instance in framework core is used.

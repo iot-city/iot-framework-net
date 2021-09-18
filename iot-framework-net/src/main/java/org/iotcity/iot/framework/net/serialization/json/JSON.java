@@ -2,20 +2,15 @@ package org.iotcity.iot.framework.net.serialization.json;
 
 import java.lang.reflect.Type;
 
-import org.iotcity.iot.framework.core.util.config.PropertiesMap;
+import org.iotcity.iot.framework.core.config.Configurable;
+import org.iotcity.iot.framework.net.config.NetConfigSerialization;
 
 /**
  * The JSON converter.
  * @author ardon
  * @date 2021-09-06
  */
-public interface JSON {
-
-	/**
-	 * Configure the JSON converter object.
-	 * @param data The configuration map.
-	 */
-	void config(PropertiesMap<Object> data);
+public interface JSON extends Configurable<NetConfigSerialization> {
 
 	/**
 	 * Converts an object to a JSON string.

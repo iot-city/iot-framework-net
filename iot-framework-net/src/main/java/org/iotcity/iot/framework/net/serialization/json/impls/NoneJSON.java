@@ -2,7 +2,7 @@ package org.iotcity.iot.framework.net.serialization.json.impls;
 
 import java.lang.reflect.Type;
 
-import org.iotcity.iot.framework.core.util.config.PropertiesMap;
+import org.iotcity.iot.framework.net.config.NetConfigSerialization;
 import org.iotcity.iot.framework.net.serialization.json.JSON;
 
 /**
@@ -13,7 +13,8 @@ import org.iotcity.iot.framework.net.serialization.json.JSON;
 public final class NoneJSON implements JSON {
 
 	@Override
-	public void config(PropertiesMap<Object> data) {
+	public boolean config(NetConfigSerialization data, boolean reset) {
+		return true;
 	}
 
 	@Override
