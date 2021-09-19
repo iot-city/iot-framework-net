@@ -70,15 +70,15 @@ public final class NetKafkaActorRequest extends NetActorRequest {
 		sb.append("{messageID=\"");
 		sb.append(messageID);
 		sb.append("\", header=");
-		sb.append(header.toString());
+		sb.append(header);
 		sb.append(", command=");
-		sb.append(command.toString());
+		sb.append(command);
 		sb.append(", params=");
 		JavaHelper.getArrayPreview(params, sb, false);
 		sb.append(", partition=");
-		sb.append(partition.toString());
+		sb.append(partition);
 		sb.append(", callback=");
-		sb.append(callback == null ? "null" : callback.toString());
+		sb.append(callback == null ? "null" : callback);
 		sb.append("}");
 		return sb.toString();
 	}

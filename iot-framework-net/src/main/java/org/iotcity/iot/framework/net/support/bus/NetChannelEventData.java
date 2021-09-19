@@ -56,4 +56,17 @@ public class NetChannelEventData {
 		return state;
 	}
 
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{service=\"");
+		sb.append(service.getServiceID());
+		sb.append("\", channel=\"");
+		sb.append(channel.getChannelID());
+		sb.append("\", state=");
+		sb.append(state);
+		sb.append("}");
+		return sb.toString();
+	}
+
 }

@@ -14,7 +14,7 @@ import org.iotcity.iot.framework.net.support.actor.NetActorResult;
  * @author ardon
  * @date 2021-09-13
  */
-@BusDataListener(value = NetKafkaActorRequest.class)
+@BusDataListener(value = NetKafkaActorRequest.class, priority = 10)
 public class NetKafkaActorMessageListener implements BusEventListener {
 
 	@Override

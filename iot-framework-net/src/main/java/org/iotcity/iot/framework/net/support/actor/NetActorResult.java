@@ -2,6 +2,8 @@ package org.iotcity.iot.framework.net.support.actor;
 
 import java.io.Serializable;
 
+import org.iotcity.iot.framework.core.util.helper.JavaHelper;
+
 /**
  * Actor response result data for network transmission.
  * @author ardon
@@ -58,11 +60,11 @@ public class NetActorResult implements Serializable {
 		StringBuilder sb = new StringBuilder();
 		sb.append("{status=");
 		sb.append(status);
-		sb.append(", msg=\"");
-		sb.append(msg);
-		sb.append("\", ref=\"");
-		sb.append(ref);
-		sb.append("\"}");
+		sb.append(", msg=");
+		JavaHelper.getDataPreview(msg, sb);
+		sb.append(", ref=");
+		JavaHelper.getDataPreview(ref, sb);
+		sb.append("}");
 		return sb.toString();
 	}
 

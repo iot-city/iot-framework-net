@@ -43,4 +43,15 @@ public class NetServiceEventData {
 		return state;
 	}
 
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{service=\"");
+		sb.append(service.getServiceID());
+		sb.append("\", state=");
+		sb.append(state);
+		sb.append("}");
+		return sb.toString();
+	}
+
 }

@@ -46,11 +46,11 @@ public final class NetKafkaActorResponse extends NetActorResponse {
 		sb.append("{messageID=\"");
 		sb.append(messageID);
 		sb.append("\", result=");
-		sb.append(result.toString());
+		sb.append(result);
 		sb.append(", data=");
 		JavaHelper.getDataPreview(data, sb);
 		sb.append(", partition=");
-		sb.append(partition.toString());
+		sb.append(partition);
 		sb.append("}");
 		return sb.toString();
 	}

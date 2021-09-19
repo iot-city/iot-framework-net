@@ -402,6 +402,21 @@ public abstract class NetChannelHandler implements NetChannel {
 		return data;
 	}
 
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{service=\"");
+		sb.append(service.getServiceID());
+		sb.append("\", channel=\"");
+		sb.append(channelID);
+		sb.append("\", state=");
+		sb.append(state);
+		sb.append(", client=");
+		sb.append(client);
+		sb.append("}");
+		return sb.toString();
+	}
+
 	// --------------------------- Inbound and outbound methods ----------------------------
 
 	@Override

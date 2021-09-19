@@ -1,5 +1,6 @@
 package org.iotcity.iot.framework.net.support.bus;
 
+import org.iotcity.iot.framework.core.util.helper.JavaHelper;
 import org.iotcity.iot.framework.net.io.NetData;
 import org.iotcity.iot.framework.net.io.NetIO;
 import org.iotcity.iot.framework.net.io.NetMessageDirection;
@@ -102,6 +103,27 @@ public class NetMessageErrorEventData {
 	 */
 	public final NetMessageStatus getErrorStatus() {
 		return errorStatus;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{service=\"");
+		sb.append(messageIO.getService().getServiceID());
+		sb.append("\", channel=\"");
+		sb.append(messageIO.getChannel().getChannelID());
+		sb.append("\", direction=");
+		sb.append(direction);
+		sb.append(", request=");
+		JavaHelper.getDataPreview(requestData, sb);
+		sb.append(", response=");
+		JavaHelper.getDataPreview(responseData, sb);
+		sb.append(", exceptions=");
+		sb.append(exceptions == null ? 0 : exceptions.length);
+		sb.append(", errorStatus=");
+		sb.append(errorStatus);
+		sb.append("}");
+		return sb.toString();
 	}
 
 }

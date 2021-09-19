@@ -68,13 +68,13 @@ public final class NetKafkaActorRequestData implements Serializable {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("{header=");
-		sb.append(header.toString());
+		sb.append(header);
 		sb.append(", command=");
-		sb.append(command.toString());
+		sb.append(command);
 		sb.append(", params=");
 		JavaHelper.getArrayPreview(params, sb, false);
 		sb.append(", callback=");
-		sb.append(callback == null ? "null" : callback.toString());
+		sb.append(callback == null ? "null" : callback);
 		sb.append("}");
 		return sb.toString();
 	}

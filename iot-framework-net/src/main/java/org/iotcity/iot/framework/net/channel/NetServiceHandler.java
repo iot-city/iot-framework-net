@@ -302,6 +302,19 @@ public abstract class NetServiceHandler implements NetService {
 		return sentTime;
 	}
 
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{server=\"");
+		sb.append(manager.getServerID());
+		sb.append("\", service=\"");
+		sb.append(serviceID);
+		sb.append("\", state=");
+		sb.append(state);
+		sb.append("}");
+		return sb.toString();
+	}
+
 	// --------------------------- Client methods ----------------------------
 
 	@Override

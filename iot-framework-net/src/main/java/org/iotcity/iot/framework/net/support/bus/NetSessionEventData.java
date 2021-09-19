@@ -1,5 +1,6 @@
 package org.iotcity.iot.framework.net.support.bus;
 
+import org.iotcity.iot.framework.core.util.helper.JavaHelper;
 import org.iotcity.iot.framework.net.session.NetSession;
 import org.iotcity.iot.framework.net.session.NetSessionState;
 
@@ -41,6 +42,17 @@ public class NetSessionEventData {
 	 */
 	public final NetSessionState getState() {
 		return state;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{session=");
+		JavaHelper.getDataPreview(session, sb);
+		sb.append(", state=");
+		sb.append(state);
+		sb.append("}");
+		return sb.toString();
 	}
 
 }

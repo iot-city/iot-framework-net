@@ -2,6 +2,8 @@ package org.iotcity.iot.framework.net.kafka.support.actor;
 
 import java.io.Serializable;
 
+import org.iotcity.iot.framework.core.util.helper.JavaHelper;
+
 /**
  * Kafka actor message information data for network transmission.
  * @author ardon
@@ -37,6 +39,17 @@ public class NetKafkaActorMessageInfo implements Serializable {
 	public NetKafkaActorMessageInfo(boolean request, String messageID) {
 		this.request = request;
 		this.messageID = messageID;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{request=");
+		sb.append(request);
+		sb.append(", messageID=");
+		JavaHelper.getDataPreview(messageID, sb);
+		sb.append("}");
+		return sb.toString();
 	}
 
 }

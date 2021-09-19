@@ -53,9 +53,9 @@ public class NetActorRequest extends NetDataAsyncRequest {
 		sb.append("{messageID=\"");
 		sb.append(messageID);
 		sb.append("\", header=");
-		sb.append(header.toString());
+		sb.append(header);
 		sb.append(", command=");
-		sb.append(command.toString());
+		sb.append(command);
 		sb.append(", params=");
 		JavaHelper.getArrayPreview(params, sb, false);
 		sb.append("}");

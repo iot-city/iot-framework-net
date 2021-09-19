@@ -1,6 +1,7 @@
 package org.iotcity.iot.framework.net.support.bus;
 
 import org.iotcity.iot.framework.core.bus.BusEvent;
+import org.iotcity.iot.framework.core.util.helper.JavaHelper;
 import org.iotcity.iot.framework.net.io.NetData;
 import org.iotcity.iot.framework.net.io.NetDataResponse;
 import org.iotcity.iot.framework.net.io.NetIO;
@@ -122,6 +123,29 @@ public class NetMessageEvent extends BusEvent {
 			sentStatus = callback.onCallback(this, status, response);
 		}
 		return sentStatus;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{source=");
+		sb.append(source.getClass().getSimpleName());
+		sb.append(", type=");
+		sb.append(type.getSimpleName());
+		sb.append(", service=\"");
+		sb.append(io.getService().getServiceID());
+		sb.append("\", channel=\"");
+		sb.append(io.getChannel().getChannelID());
+		sb.append("\", request=");
+		JavaHelper.getDataPreview(data, sb);
+		sb.append(", response=");
+		JavaHelper.getDataPreview(businessResponse, sb);
+		sb.append(", status=");
+		sb.append(businessStatus);
+		sb.append(", sentStatus=");
+		sb.append(sentStatus);
+		sb.append("}");
+		return sb.toString();
 	}
 
 }
